@@ -35,6 +35,18 @@ const secretPatterns = [
   }
 ];
 
+const loggerForbiddenFields = [
+  "analysisText",
+  "rawBody",
+  "requestBody",
+  "responseBody",
+  "authorization",
+  "slackSignature",
+  "slackToken",
+  "geminiApiKey",
+  "geminiRawOutput"
+];
+
 const isLikelyBinary = (content: Buffer): boolean => content.includes(0);
 
 const collectFiles = (directory: string, files: string[] = []): string[] => {
@@ -75,6 +87,43 @@ for (const file of collectFiles(process.cwd())) {
       });
     }
   }
+
+  const relativeFile = relative(process.cwd(), file);
+  if (relativeFile.startsWith("src/") || relativeFile.startsWith("scripts/")) {
+    for (const call of extractLoggerCalls(text)) {
+      for (const field of loggerForbiddenFields) {
+        const pattern = new RegExp(`\\b${field}\\b`, "u");
+        if (pattern.test(call)) {
+          findings.push({
+            file: relativeFile,
+            label: `forbidden logger field: ${field}`
+          });
+        }
+      }
+    }
+  }
+}
+
+function extractLoggerCalls(text: string): string[] {
+  const calls: string[] = [];
+  const loggerCallPattern = /logger\.(?:trace|debug|info|warn|error|fatal)\s*\(/gu;
+  for (const match of text.matchAll(loggerCallPattern)) {
+    const start = match.index;
+    let depth = 0;
+    for (let index = start; index < text.length; index += 1) {
+      const char = text[index];
+      if (char === "(") {
+        depth += 1;
+      } else if (char === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          calls.push(text.slice(start, index + 1));
+          break;
+        }
+      }
+    }
+  }
+  return calls;
 }
 
 if (findings.length > 0) {
