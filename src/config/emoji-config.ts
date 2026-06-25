@@ -11,28 +11,27 @@ const candidateSchema = z.object({
   description: z.string().min(1).max(160)
     .or(z.string().min(1).max(240)),
   use_when: z.string().min(1).max(240),
-  avoid_when: z.string().min(1).max(240)
+  avoid_when: z.string().max(240).default("")
 });
 
 const emojiConfigSchema = z.object({
   version: z.literal(1),
-  fallback: z.array(emojiNameSchema).length(REACTION_COUNT)
-    .or(z.array(emojiNameSchema).min(1)),
+  fallback: z.array(emojiNameSchema).length(REACTION_COUNT),
   emojis: z.array(candidateSchema).min(6)
 });
 
 export function parseEmojiConfig(input: unknown): EmojiConfig {
   const parsed = emojiConfigSchema.parse(input);
   const names = new Set<string>();
-  const enabledCandidates = parsed.emojis.filter((candidate) => candidate.enabled);
-  if (enabledCandidates.length < 6) {
-    throw new Error("enabled emoji candidates must be at least 6");
-  }
-  for (const candidate of enabledCandidates) {
+  for (const candidate of parsed.emojis) {
     if (names.has(candidate.name)) {
       throw new Error(`duplicate emoji candidate: ${candidate.name}`);
     }
     names.add(candidate.name);
+  }
+  const enabledCandidates = parsed.emojis.filter((candidate) => candidate.enabled);
+  if (enabledCandidates.length < 6) {
+    throw new Error("enabled emoji candidates must be at least 6");
   }
   const fallbackSet = new Set(parsed.fallback);
   if (fallbackSet.size !== REACTION_COUNT) {
