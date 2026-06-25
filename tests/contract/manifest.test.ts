@@ -93,4 +93,71 @@ describe("contracts", () => {
     expect(license).toContain("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION");
     expect(license).toContain("Grant of Patent License");
   });
+
+  it("deployment uses Workload Identity Federation without long-lived JSON keys", () => {
+    const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    expect(deployWorkflow).toContain("google-github-actions/auth@");
+    expect(deployWorkflow).toContain("workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}");
+    expect(deployWorkflow).toContain("service_account: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}");
+    expect(deployWorkflow).toContain("id-token: write");
+    expect(deployWorkflow).not.toContain("credentials_json");
+    expect(deployWorkflow).not.toContain("GOOGLE_APPLICATION_CREDENTIALS");
+
+    const bootstrap = readFileSync("infra/bootstrap/README.md", "utf8");
+    expect(bootstrap).toContain("Workload Identity Federation");
+    expect(bootstrap).toContain("GCP_WORKLOAD_IDENTITY_PROVIDER");
+    expect(bootstrap).toContain("GCP_DEPLOYER_SERVICE_ACCOUNT");
+    expect(bootstrap).toContain("roles/iam.workloadIdentityUser");
+    expect(bootstrap).toContain("Do not create or store a long-lived service account JSON key.");
+  });
+
+  it("deployment docs cover the required rollout sequence and secret containers", () => {
+    const deployment = readFileSync("docs/deployment.md", "utf8");
+    for (const phrase of [
+      "hosting GCP project",
+      "separate Gemini API key project",
+      "Slack App ID, Team ID, and Signing Secret",
+      "Bot Token",
+      "Secret Manager versions",
+      "slack-emoji-bot-slack-signing-secret",
+      "slack-emoji-bot-slack-bot-token",
+      "slack-emoji-bot-gemini-api-key",
+      "Slack Event Subscription URL verification",
+      "DRY_RUN=true",
+      "DRY_RUN=false"
+    ]) {
+      expect(deployment).toContain(phrase);
+    }
+  });
+
+  it("Terraform declares required low-cost serverless infrastructure", () => {
+    const terraform = readFileSync("infra/terraform/main.tf", "utf8");
+    for (const phrase of [
+      "run.googleapis.com",
+      "cloudtasks.googleapis.com",
+      "firestore.googleapis.com",
+      "secretmanager.googleapis.com",
+      "artifactregistry.googleapis.com",
+      "iamcredentials.googleapis.com",
+      "sts.googleapis.com",
+      "${local.service_prefix}-slack-signing-secret",
+      "${local.service_prefix}-slack-bot-token",
+      "${local.service_prefix}-gemini-api-key",
+      "google_cloud_run_v2_service\" \"receiver\"",
+      "google_cloud_run_v2_service\" \"worker\"",
+      "google_cloud_tasks_queue\" \"queue\"",
+      "google_firestore_database\" \"database\"",
+      "google_firestore_field\" \"process_expires_at\"",
+      "roles/cloudtasks.enqueuer",
+      "roles/datastore.user",
+      "roles/run.invoker",
+      "INGRESS_TRAFFIC_INTERNAL_ONLY",
+      "min_instance_count = 0",
+      "max_instance_count = 2"
+    ]) {
+      expect(terraform).toContain(phrase);
+    }
+    expect(terraform).not.toContain("cloudbuild.googleapis.com");
+    expect(terraform).not.toContain("secret_data");
+  });
 });
