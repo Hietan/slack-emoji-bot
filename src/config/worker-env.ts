@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { configError, zodConfigIssues } from "./env-errors.js";
 import { parseTargetChannelSet } from "./target-channels.js";
 
 const workerEnvSchema = z.object({
@@ -31,10 +32,17 @@ export type WorkerEnv = z.infer<typeof workerEnvSchema> & {
 };
 
 export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEnv {
-  const parsed = workerEnvSchema.parse(source);
-  if (parsed.NODE_ENV === "production" && !parsed.GEMINI_UNPAID_TERMS_ACKNOWLEDGED) {
-    throw new Error("GEMINI_UNPAID_TERMS_ACKNOWLEDGED must be true in production");
+  const parsed = workerEnvSchema.safeParse(source);
+  if (!parsed.success) {
+    throw configError("Invalid worker environment", zodConfigIssues(parsed.error));
   }
-  const targetChannelSet = parseTargetChannelSet(parsed.TARGET_CHANNEL_IDS);
-  return { ...parsed, targetChannelSet };
+  if (parsed.data.NODE_ENV === "production" && !parsed.data.GEMINI_UNPAID_TERMS_ACKNOWLEDGED) {
+    throw configError("Invalid worker environment", ["GEMINI_UNPAID_TERMS_ACKNOWLEDGED: must be true in production"]);
+  }
+  try {
+    const targetChannelSet = parseTargetChannelSet(parsed.data.TARGET_CHANNEL_IDS);
+    return { ...parsed.data, targetChannelSet };
+  } catch (error) {
+    throw configError("Invalid worker environment", [`TARGET_CHANNEL_IDS: ${error instanceof Error ? error.message : "invalid value"}`]);
+  }
 }

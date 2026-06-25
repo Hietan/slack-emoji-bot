@@ -51,4 +51,42 @@ describe("environment config", () => {
     expect(() => loadReceiverEnv(receiverWithoutNodeEnv)).toThrow();
     expect(() => loadWorkerEnv(workerWithoutNodeEnv)).toThrow();
   });
+
+  it("lists configuration errors without echoing secret values", () => {
+    expect(() =>
+      loadReceiverEnv({
+        ...receiverEnv,
+        NODE_ENV: undefined,
+        SLACK_SIGNING_SECRET: "super-secret-signing-value",
+        WORKER_URL: "not-url",
+        MAX_ANALYSIS_TEXT_CHARS: "10"
+      })
+    ).toThrow(/NODE_ENV:|WORKER_URL:|MAX_ANALYSIS_TEXT_CHARS:/u);
+    expect(() =>
+      loadReceiverEnv({
+        ...receiverEnv,
+        NODE_ENV: undefined,
+        SLACK_SIGNING_SECRET: "super-secret-signing-value",
+        WORKER_URL: "not-url",
+        MAX_ANALYSIS_TEXT_CHARS: "10"
+      })
+    ).toThrow(/Invalid receiver environment/u);
+
+    try {
+      loadReceiverEnv({
+        ...receiverEnv,
+        NODE_ENV: undefined,
+        SLACK_SIGNING_SECRET: "super-secret-signing-value",
+        WORKER_URL: "not-url",
+        MAX_ANALYSIS_TEXT_CHARS: "10"
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).not.toContain("super-secret-signing-value");
+    }
+
+    expect(() => loadWorkerEnv({ ...workerEnv, GEMINI_UNPAID_TERMS_ACKNOWLEDGED: "false" })).toThrow(
+      /Invalid worker environment: GEMINI_UNPAID_TERMS_ACKNOWLEDGED/u
+    );
+  });
 });

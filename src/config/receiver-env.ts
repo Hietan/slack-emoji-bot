@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { configError, zodConfigIssues } from "./env-errors.js";
 import { parseTargetChannelSet } from "./target-channels.js";
 
 const receiverEnvSchema = z.object({
@@ -21,7 +22,14 @@ export type ReceiverEnv = z.infer<typeof receiverEnvSchema> & {
 };
 
 export function loadReceiverEnv(source: NodeJS.ProcessEnv = process.env): ReceiverEnv {
-  const parsed = receiverEnvSchema.parse(source);
-  const targetChannelSet = parseTargetChannelSet(parsed.TARGET_CHANNEL_IDS);
-  return { ...parsed, targetChannelSet };
+  const parsed = receiverEnvSchema.safeParse(source);
+  if (!parsed.success) {
+    throw configError("Invalid receiver environment", zodConfigIssues(parsed.error));
+  }
+  try {
+    const targetChannelSet = parseTargetChannelSet(parsed.data.TARGET_CHANNEL_IDS);
+    return { ...parsed.data, targetChannelSet };
+  } catch (error) {
+    throw configError("Invalid receiver environment", [`TARGET_CHANNEL_IDS: ${error instanceof Error ? error.message : "invalid value"}`]);
+  }
 }
