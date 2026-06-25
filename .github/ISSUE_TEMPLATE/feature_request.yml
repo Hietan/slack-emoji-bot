@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a scoped improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        MVP scope is intentionally narrow. Spec changes should include an issue and, for architecture changes, an ADR.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or operator problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope area
+      options:
+        - receiver
+        - worker
+        - emoji selection
+        - Slack app setup
+        - GCP infrastructure
+        - documentation
+        - future extension
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Privacy, cost, or security considerations
+      description: Note any effect on Slack message handling, Gemini usage, IAM, or logging.
+    validations:
+      required: true

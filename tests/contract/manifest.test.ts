@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { loadEmojiConfig } from "../../src/config/emoji-config.js";
 import { taskPayloadSchema } from "../../src/domain/task-payload.js";
@@ -68,5 +68,29 @@ describe("contracts", () => {
       rawText: "secret"
     };
     expect(taskPayloadSchema.strict().safeParse(payload).success).toBe(false);
+  });
+
+  it("OSS repository support files are present", () => {
+    for (const path of [
+      "README.md",
+      "LICENSE",
+      "SECURITY.md",
+      "CONTRIBUTING.md",
+      "CODE_OF_CONDUCT.md",
+      ".github/pull_request_template.md",
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "docs/assets/demo-placeholder.svg"
+    ]) {
+      expect(existsSync(path), path).toBe(true);
+    }
+
+    const readme = readFileSync("README.md", "utf8");
+    expect(readme).toContain("Demo Placeholder");
+    expect(readme).toContain("docs/assets/demo-placeholder.svg");
+
+    const license = readFileSync("LICENSE", "utf8");
+    expect(license).toContain("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION");
+    expect(license).toContain("Grant of Patent License");
   });
 });

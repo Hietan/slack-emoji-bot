@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible problem with Emoji Bot.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include Slack message text, API keys, bot tokens, signing secrets, or raw external API responses.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Release version, image tag, or Git SHA.
+      placeholder: v1.0.0 or abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - receiver
+        - worker
+        - Terraform
+        - Slack app manifest
+        - documentation
+        - unsure
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Use redacted logs only. Do not paste message text or secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Configure ...
+        2. Send a top-level public-channel message ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node, pnpm, GCP region, deployment mode, and DRY_RUN setting.
+    validations:
+      required: true

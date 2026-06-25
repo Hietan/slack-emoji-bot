@@ -16,6 +16,12 @@ flowchart LR
 
 This repository contains the MVP implementation scaffold and core receiver/worker behavior described in `SPECIFICATION.md`.
 
+## Demo Placeholder
+
+Add a short GIF or screenshot here after the first real workspace dry run. The image should show only test messages and bot reactions, with no private channel content, user identities, secrets, or unpublished information.
+
+![Emoji Bot demo placeholder](docs/assets/demo-placeholder.svg)
+
 ## What It Handles
 
 - Public channels listed in `TARGET_CHANNEL_IDS`.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { processSlackEvent } from "../../src/application/process-slack-event.js";
-import type { EmojiConfig } from "../../src/domain/emoji.js";
+import { fallbackSelector, processSlackEvent, standardOnlyCatalog } from "../../src/application/process-slack-event.js";
+import type { EmojiCandidate, EmojiConfig } from "../../src/domain/emoji.js";
 import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { MemoryProcessRepository } from "../fixtures/memory-process-repository.js";
 
@@ -47,6 +47,54 @@ const base = {
 };
 
 describe("processSlackEvent", () => {
+  it("rejects tasks that no longer match worker configuration before acquiring a lease", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload: { ...payload, channelId: "C2" },
+        repository,
+        emojiSelector: selector,
+        reactionClient
+      })
+    ).resolves.toEqual({ kind: "invalid_task" });
+
+    expect(repository.records.size).toBe(0);
+    expect(selector.select).not.toHaveBeenCalled();
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+  });
+
+  it("returns lease conflicts without calling Gemini or Slack", async () => {
+    const repository = new MemoryProcessRepository();
+    const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    await repository.acquireLease(payload, "owner-1", new Date("2026-06-25T00:02:00.000Z"), base.clock.now());
+
+    await expect(processSlackEvent({ ...base, payload, repository, emojiSelector: selector, reactionClient })).resolves.toEqual({ kind: "lease_conflict" });
+
+    expect(selector.select).not.toHaveBeenCalled();
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+  });
+
+  it("does not reprocess completed records", async () => {
+    const repository = new MemoryProcessRepository();
+    const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    await processSlackEvent({ ...base, payload: { ...payload, eventId: "EvCompleted" }, repository, emojiSelector: selector, reactionClient });
+    selector.select.mockClear();
+    reactionClient.addReaction.mockClear();
+
+    await expect(processSlackEvent({ ...base, payload: { ...payload, eventId: "EvCompleted" }, repository, emojiSelector: selector, reactionClient })).resolves.toEqual({
+      kind: "already_completed"
+    });
+
+    expect(selector.select).not.toHaveBeenCalled();
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+  });
+
   it("persists a selection once and resumes only unfinished reactions", async () => {
     const repository = new MemoryProcessRepository();
     const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
@@ -82,6 +130,54 @@ describe("processSlackEvent", () => {
     const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "eyes", "nope"] as [string, string, string], source: "gemini" as const })) };
     await processSlackEvent({ ...base, payload: { ...payload, eventId: "Ev2" }, repository, emojiSelector: selector, reactionClient });
     expect(repository.records.get("Ev2")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
+    expect(repository.records.get("Ev2")?.selectionSource).toBe("fallback_invalid_output");
+  });
+
+  it("uses deterministic fallback when Gemini throws", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    const selector = { select: vi.fn(() => Promise.reject(new Error("timeout"))) };
+    await processSlackEvent({ ...base, payload: { ...payload, eventId: "EvGeminiError" }, repository, emojiSelector: selector, reactionClient });
+    expect(repository.records.get("EvGeminiError")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
+    expect(repository.records.get("EvGeminiError")?.selectionSource).toBe("fallback_gemini_error");
+  });
+
+  it("includes available custom emoji in Gemini candidates", async () => {
+    const repository = new MemoryProcessRepository();
+    const customConfig: EmojiConfig = {
+      candidates: [...emojiConfig.candidates, emoji("shipit", "custom"), emoji("missing_custom", "custom")],
+      fallback: emojiConfig.fallback
+    };
+    let candidateNames: string[] = [];
+    const selector = {
+      select: vi.fn(({ candidates }: { candidates: EmojiCandidate[] }) => {
+        candidateNames = candidates.map((candidate) => candidate.name);
+        return Promise.resolve({ names: ["shipit", "eyes", "tada"] as [string, string, string], source: "gemini" as const });
+      })
+    };
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+
+    await processSlackEvent({
+      ...base,
+      emojiConfig: customConfig,
+      payload: { ...payload, eventId: "EvCustom" },
+      repository,
+      emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set(["shipit"])) },
+      emojiSelector: selector,
+      reactionClient
+    });
+
+    expect(selector.select).toHaveBeenCalledOnce();
+    expect(candidateNames).toEqual([
+      "eyes",
+      "white_check_mark",
+      "tada",
+      "pray",
+      "bulb",
+      "rocket",
+      "shipit"
+    ]);
+    expect(repository.records.get("EvCustom")?.selectedEmojis).toEqual(["shipit", "eyes", "tada"]);
   });
 
   it("marks dry runs complete without calling Slack", async () => {
@@ -121,5 +217,102 @@ describe("processSlackEvent", () => {
 
     expect(calls).toEqual(["rocket", "tada", "eyes", "white_check_mark"]);
     expect(repository.records.get("Ev4")?.selectedEmojis).toEqual(["tada", "eyes", "white_check_mark"]);
+  });
+
+  it("uses the first unused standard candidate when fallback names are unavailable", async () => {
+    const repository = new MemoryProcessRepository();
+    const calls: string[] = [];
+    const reactionClient = {
+      addReaction: vi.fn(({ emojiName }: { emojiName: string }) => {
+        calls.push(emojiName);
+        return Promise.resolve(emojiName === "eyes" ? { ok: false as const, retryable: false, code: "invalid_name" as const } : { ok: true as const });
+      })
+    };
+
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvFallbackCandidate" },
+      repository,
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient
+    });
+
+    expect(calls).toEqual(["eyes", "pray", "white_check_mark", "tada"]);
+    expect(repository.records.get("EvFallbackCandidate")?.selectedEmojis).toEqual(["pray", "white_check_mark", "tada"]);
+  });
+
+  it("marks permanent Slack errors and stops processing remaining reactions", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = {
+      addReaction: vi.fn(({ emojiName }: { emojiName: string }) =>
+        Promise.resolve(emojiName === "white_check_mark" ? { ok: false as const, retryable: false, code: "missing_scope" as const } : { ok: true as const })
+      )
+    };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload: { ...payload, eventId: "EvPermanent" },
+        repository,
+        emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+        reactionClient
+      })
+    ).resolves.toEqual({ kind: "completed" });
+
+    expect(reactionClient.addReaction).toHaveBeenCalledTimes(2);
+    expect(repository.records.get("EvPermanent")?.status).toBe("permanent_error");
+    expect(repository.records.get("EvPermanent")?.lastError).toMatchObject({ stage: "slack", code: "missing_scope", retryable: false });
+  });
+
+  it("returns retry-after seconds for Slack rate limits", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = {
+      addReaction: vi.fn(() => Promise.resolve({ ok: false as const, retryable: true, code: "ratelimited" as const, retryAfterSeconds: 42 }))
+    };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload: { ...payload, eventId: "EvRateLimit" },
+        repository,
+        emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+        reactionClient
+      })
+    ).resolves.toEqual({ kind: "retryable", retryAfterSeconds: 42 });
+
+    expect(repository.records.get("EvRateLimit")?.status).toBe("retryable_error");
+    expect(repository.records.get("EvRateLimit")?.lastError).toMatchObject({ code: "ratelimited", retryable: true });
+  });
+
+  it("marks invalid_name permanent when no unused standard replacement is available", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: false as const, retryable: false, code: "invalid_name" as const })) };
+    const narrowConfig: EmojiConfig = {
+      candidates: [emoji("eyes"), emoji("white_check_mark"), emoji("tada")],
+      fallback: ["eyes", "white_check_mark", "tada"]
+    };
+
+    await processSlackEvent({
+      ...base,
+      emojiConfig: narrowConfig,
+      payload: { ...payload, eventId: "EvInvalidName" },
+      repository,
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient
+    });
+
+    expect(reactionClient.addReaction).toHaveBeenCalledTimes(1);
+    expect(repository.records.get("EvInvalidName")?.status).toBe("permanent_error");
+    expect(repository.records.get("EvInvalidName")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
+  });
+
+  it("exposes standard-only fallback ports for production wiring defaults", async () => {
+    const catalog = standardOnlyCatalog();
+    const selector = fallbackSelector(emojiConfig);
+    await expect(catalog.listCustomEmojiNames()).resolves.toEqual(new Set<string>());
+    await expect(selector.select({ analysisText: "hello", candidates: emojiConfig.candidates })).resolves.toEqual({
+      names: ["eyes", "white_check_mark", "tada"],
+      source: "fallback_gemini_error"
+    });
   });
 });

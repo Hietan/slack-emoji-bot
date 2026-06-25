@@ -34,17 +34,26 @@ describe("decideSlackEvent", () => {
   });
 
   it.each([
-    [{ channel: "C2" }, "channel_not_configured"],
-    [{ thread_ts: "1712345678.123456" }, "thread_reply"],
-    [{ subtype: "message_changed" }, "message_subtype"],
-    [{ bot_id: "B1" }, "bot_message"],
-    [{ app_id: "A2" }, "bot_message"],
-    [{ hidden: true }, "hidden_message"],
-    [{ user: "" }, "missing_user"],
-    [{ ts: "bad" }, "invalid_timestamp"],
-    [{ channel_type: "im" }, "unsupported_channel_type"]
-  ])("ignores %j as %s", (override, reason) => {
-    const result = decideSlackEvent(envelope(override), normalized, {
+    { input: { type: "url_verification" }, text: normalized, reason: "unsupported_envelope" },
+    { input: { type: "event_callback", team_id: "T2" }, text: normalized, reason: "unsupported_envelope" },
+    { input: { type: "event_callback", api_app_id: "A2" }, text: normalized, reason: "unsupported_envelope" },
+    { input: { type: "event_callback", event_id: undefined }, text: normalized, reason: "unsupported_envelope" },
+    { input: { type: "event_callback", event_time: undefined }, text: normalized, reason: "unsupported_envelope" },
+    { input: { ...envelope({}), event: { type: "reaction_added" } }, text: normalized, reason: "unsupported_event_type" },
+    { input: envelope({ channel: undefined }), text: normalized, reason: "channel_not_configured" },
+    { input: envelope({ channel: "C2" }), text: normalized, reason: "channel_not_configured" },
+    { input: envelope({ thread_ts: "1712345678.123456" }), text: normalized, reason: "thread_reply" },
+    { input: envelope({ subtype: "message_changed" }), text: normalized, reason: "message_subtype" },
+    { input: envelope({ bot_id: "B1" }), text: normalized, reason: "bot_message" },
+    { input: envelope({ app_id: "A2" }), text: normalized, reason: "bot_message" },
+    { input: envelope({ hidden: true }), text: normalized, reason: "hidden_message" },
+    { input: envelope({ user: undefined }), text: normalized, reason: "missing_user" },
+    { input: envelope({ user: "" }), text: normalized, reason: "missing_user" },
+    { input: envelope({ ts: "bad" }), text: normalized, reason: "invalid_timestamp" },
+    { input: envelope({ channel_type: "im" }), text: normalized, reason: "unsupported_channel_type" },
+    { input: envelope({}), text: { analysisText: "", textSha256: "a".repeat(64) }, reason: "empty_text" }
+  ])("ignores $reason", ({ input, text, reason }) => {
+    const result = decideSlackEvent(input, text, {
       teamId: "T1",
       apiAppId: "A1",
       targetChannelIds: new Set(["C1"])

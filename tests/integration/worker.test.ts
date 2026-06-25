@@ -27,7 +27,7 @@ const env = {
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1",
-  SLACK_BOT_TOKEN: "xoxb-test",
+  SLACK_BOT_TOKEN: "test-slack-token",
   GEMINI_API_KEY: "gemini-test",
   GEMINI_MODEL: "gemini-2.5-flash-lite",
   GEMINI_TIMEOUT_MS: 8000,
@@ -89,5 +89,59 @@ describe("worker app", () => {
     const response = await request(app).post("/tasks/process").send({ ...payload, eventId: "Ev2" });
     expect(response.status).toBe(204);
     expect(repository.records.get("Ev2")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
+  });
+
+  it("discards invalid task payloads with 204", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
+    const app = createWorkerApp({
+      env,
+      emojiConfig,
+      repository,
+      emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set<string>()) },
+      emojiSelector: selector,
+      reactionClient,
+      clock: { now: () => new Date("2026-06-25T00:00:00.000Z") }
+    });
+    const response = await request(app).post("/tasks/process").send({ ...payload, userId: "U1" });
+    expect(response.status).toBe(204);
+    expect(selector.select).not.toHaveBeenCalled();
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+    expect(repository.records.size).toBe(0);
+  });
+
+  it("returns 409 while another worker owns the lease", async () => {
+    const repository = new MemoryProcessRepository();
+    await repository.acquireLease(payload, "owner-1", new Date("2026-06-25T00:02:00.000Z"), new Date("2026-06-25T00:00:00.000Z"));
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    const app = createWorkerApp({
+      env,
+      emojiConfig,
+      repository,
+      emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set<string>()) },
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const }) },
+      reactionClient,
+      clock: { now: () => new Date("2026-06-25T00:00:30.000Z") }
+    });
+    const response = await request(app).post("/tasks/process").send(payload);
+    expect(response.status).toBe(409);
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 and Retry-After for Slack rate limits", async () => {
+    const repository = new MemoryProcessRepository();
+    const app = createWorkerApp({
+      env,
+      emojiConfig,
+      repository,
+      emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set<string>()) },
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: false as const, retryable: true, code: "ratelimited" as const, retryAfterSeconds: 9 }) },
+      clock: { now: () => new Date("2026-06-25T00:00:00.000Z") }
+    });
+    const response = await request(app).post("/tasks/process").send({ ...payload, eventId: "EvRateLimited" });
+    expect(response.status).toBe(429);
+    expect(response.headers["retry-after"]).toBe("9");
   });
 });
