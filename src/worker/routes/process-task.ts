@@ -43,7 +43,10 @@ export function createProcessTaskRouter(input: {
       emojiCatalog: input.emojiCatalog,
       emojiSelector: input.emojiSelector,
       reactionClient: input.reactionClient,
-      clock: input.clock
+      clock: input.clock,
+      observer: (event) => {
+        logger.info(event, event.event);
+      }
     });
     if (outcome.kind === "lease_conflict") {
       response.status(409).send();
@@ -58,7 +61,6 @@ export function createProcessTaskRouter(input: {
       response.status(503).send();
       return;
     }
-    logger.info({ event: "worker_completed", status: outcome.kind }, "worker completed");
     response.status(204).send();
   });
 

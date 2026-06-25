@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fallbackSelector, processSlackEvent, standardOnlyCatalog } from "../../src/application/process-slack-event.js";
 import type { EmojiCandidate, EmojiConfig } from "../../src/domain/emoji.js";
 import type { TaskPayload } from "../../src/domain/task-payload.js";
+import { eventIdHash } from "../../src/shared/crypto.js";
 import { MemoryProcessRepository } from "../fixtures/memory-process-repository.js";
 
 function emoji(name: string, kind: "standard" | "custom" = "standard") {
@@ -47,6 +48,132 @@ const base = {
 };
 
 describe("processSlackEvent", () => {
+  it("emits safe observability events for selection and reaction progress", async () => {
+    const repository = new MemoryProcessRepository();
+    const observed: unknown[] = [];
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload,
+        repository,
+        emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set<string>()) },
+        emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+        reactionClient,
+        observer: (event) => observed.push(event)
+      })
+    ).resolves.toEqual({ kind: "completed" });
+
+    expect(observed).toEqual([
+      {
+        event: "worker_lease_acquired",
+        eventIdHash: eventIdHash("Ev1"),
+        channelId: "C1",
+        messageTs: "1712345678.123456",
+        attemptCount: 1
+      },
+      { event: "gemini_selection_succeeded", eventIdHash: eventIdHash("Ev1"), source: "gemini" },
+      { event: "slack_reaction_succeeded", eventIdHash: eventIdHash("Ev1"), emojiName: "eyes", alreadyPresent: false },
+      { event: "slack_reaction_succeeded", eventIdHash: eventIdHash("Ev1"), emojiName: "white_check_mark", alreadyPresent: false },
+      { event: "slack_reaction_succeeded", eventIdHash: eventIdHash("Ev1"), emojiName: "tada", alreadyPresent: false },
+      { event: "worker_completed", eventIdHash: eventIdHash("Ev1"), status: "completed" }
+    ]);
+    expect(JSON.stringify(observed)).not.toContain("hello");
+    expect(JSON.stringify(observed)).not.toContain("analysisText");
+  });
+
+  it("emits observability events for invalid, duplicate, dry-run, retryable, and permanent outcomes", async () => {
+    const invalidEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, channelId: "C2" },
+      repository: new MemoryProcessRepository(),
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
+      observer: (event) => invalidEvents.push(event)
+    });
+    expect(invalidEvents).toEqual([{ event: "worker_completed", eventIdHash: eventIdHash("Ev1"), status: "invalid_task" }]);
+
+    const completedRepository = new MemoryProcessRepository();
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedCompleted" },
+      repository: completedRepository,
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) }
+    });
+    const completedEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedCompleted" },
+      repository: completedRepository,
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
+      observer: (event) => completedEvents.push(event)
+    });
+    expect(completedEvents).toEqual([
+      { event: "worker_already_completed", eventIdHash: eventIdHash("EvObservedCompleted"), status: "already_completed" }
+    ]);
+
+    const dryRunEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      config: { ...base.config, dryRun: true },
+      payload: { ...payload, eventId: "EvObservedDryRun" },
+      repository: new MemoryProcessRepository(),
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
+      observer: (event) => dryRunEvents.push(event)
+    });
+    expect(dryRunEvents.at(-1)).toEqual({
+      event: "worker_completed",
+      eventIdHash: eventIdHash("EvObservedDryRun"),
+      status: "completed"
+    });
+
+    const retryableEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedRetryable" },
+      repository: new MemoryProcessRepository(),
+      emojiConfig: { candidates: [...emojiConfig.candidates, emoji("shipit", "custom")], fallback: emojiConfig.fallback },
+      emojiCatalog: { listCustomEmojiNames: () => Promise.reject(new Error("unavailable")) },
+      emojiSelector: { select: () => Promise.reject(new Error("timeout")) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: false as const, retryable: true, code: "service_unavailable" as const }) },
+      observer: (event) => retryableEvents.push(event)
+    });
+    expect(retryableEvents).toContainEqual({
+      event: "custom_emoji_catalog_unavailable",
+      eventIdHash: eventIdHash("EvObservedRetryable")
+    });
+    expect(retryableEvents).toContainEqual({
+      event: "gemini_selection_fallback",
+      eventIdHash: eventIdHash("EvObservedRetryable"),
+      source: "fallback_gemini_error"
+    });
+    expect(retryableEvents).toContainEqual({
+      event: "slack_reaction_retryable_error",
+      eventIdHash: eventIdHash("EvObservedRetryable"),
+      code: "service_unavailable"
+    });
+
+    const permanentEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedPermanent" },
+      repository: new MemoryProcessRepository(),
+      emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: false as const, retryable: false, code: "missing_scope" as const }) },
+      observer: (event) => permanentEvents.push(event)
+    });
+    expect(permanentEvents).toContainEqual({
+      event: "slack_reaction_permanent_error",
+      eventIdHash: eventIdHash("EvObservedPermanent"),
+      code: "missing_scope"
+    });
+  });
+
   it("rejects tasks that no longer match worker configuration before acquiring a lease", async () => {
     const repository = new MemoryProcessRepository();
     const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };

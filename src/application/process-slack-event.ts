@@ -8,6 +8,31 @@ import { selectFallback, validateSelection } from "../domain/emoji.js";
 import type { WorkerOutcome } from "../domain/errors.js";
 import type { TaskPayload } from "../domain/task-payload.js";
 import type { Clock } from "../shared/clock.js";
+import { eventIdHash } from "../shared/crypto.js";
+
+export type ProcessObserverEvent =
+  | {
+      event: "worker_lease_acquired";
+      eventIdHash: string;
+      channelId: string;
+      messageTs: string;
+      attemptCount: number;
+    }
+  | { event: "worker_already_completed"; eventIdHash: string; status: "already_completed" }
+  | { event: "custom_emoji_catalog_loaded"; eventIdHash: string; count: number }
+  | { event: "custom_emoji_catalog_unavailable"; eventIdHash: string }
+  | { event: "gemini_selection_succeeded"; eventIdHash: string; source: "gemini" }
+  | {
+      event: "gemini_selection_fallback";
+      eventIdHash: string;
+      source: "fallback_gemini_error" | "fallback_invalid_output" | "fallback_no_custom_catalog";
+    }
+  | { event: "slack_reaction_succeeded"; eventIdHash: string; emojiName: string; alreadyPresent: boolean }
+  | { event: "slack_reaction_retryable_error"; eventIdHash: string; code: string; retryAfterSeconds?: number }
+  | { event: "slack_reaction_permanent_error"; eventIdHash: string; code: string }
+  | { event: "worker_completed"; eventIdHash: string; status: "completed" | "already_completed" | "invalid_task" };
+
+export type ProcessObserver = (event: ProcessObserverEvent) => void;
 
 export type ProcessSlackEventConfig = {
   teamId: string;
@@ -26,13 +51,16 @@ export async function processSlackEvent(input: {
   emojiSelector: EmojiSelector;
   reactionClient: ReactionClient;
   clock: Clock;
+  observer?: ProcessObserver;
 }): Promise<WorkerOutcome> {
   const { payload, config } = input;
+  const hashedEventId = eventIdHash(payload.eventId);
   if (
     payload.teamId !== config.teamId ||
     payload.apiAppId !== config.apiAppId ||
     !config.targetChannelIds.has(payload.channelId)
   ) {
+    input.observer?.({ event: "worker_completed", eventIdHash: hashedEventId, status: "invalid_task" });
     return { kind: "invalid_task" };
   }
 
@@ -44,6 +72,7 @@ export async function processSlackEvent(input: {
     now
   );
   if (lease.kind === "already_completed") {
+    input.observer?.({ event: "worker_already_completed", eventIdHash: hashedEventId, status: "already_completed" });
     return { kind: "already_completed" };
   }
   if (lease.kind === "conflict") {
@@ -51,24 +80,35 @@ export async function processSlackEvent(input: {
   }
 
   let record = lease.record;
+  input.observer?.({
+    event: "worker_lease_acquired",
+    eventIdHash: hashedEventId,
+    channelId: payload.channelId,
+    messageTs: payload.messageTs,
+    attemptCount: record.attemptCount
+  });
   if (record.selectedEmojis === null) {
     const selection = await selectEmoji({
+      eventIdHash: hashedEventId,
       analysisText: payload.analysisText,
       emojiConfig: input.emojiConfig,
       emojiCatalog: input.emojiCatalog,
-      emojiSelector: input.emojiSelector
+      emojiSelector: input.emojiSelector,
+      ...(input.observer === undefined ? {} : { observer: input.observer })
     });
     record = await input.repository.persistSelection(payload.eventId, selection, input.clock.now());
   }
 
   if (config.dryRun) {
     await input.repository.markCompleted(payload.eventId, true, input.clock.now());
+    input.observer?.({ event: "worker_completed", eventIdHash: hashedEventId, status: "completed" });
     return { kind: "completed" };
   }
 
   const selectedEmojiNames = record.selectedEmojis;
   if (selectedEmojiNames === null) {
     await input.repository.markPermanentError(payload.eventId, "selection_missing", input.clock.now());
+    input.observer?.({ event: "slack_reaction_permanent_error", eventIdHash: hashedEventId, code: "selection_missing" });
     return { kind: "completed" };
   }
 
@@ -104,6 +144,12 @@ export async function processSlackEvent(input: {
         });
         if (retryResult.ok) {
           record = await input.repository.markReactionComplete(payload.eventId, replacement, input.clock.now());
+          input.observer?.({
+            event: "slack_reaction_succeeded",
+            eventIdHash: hashedEventId,
+            emojiName: replacement,
+            alreadyPresent: retryResult.alreadyPresent === true
+          });
           continue;
         }
         result = retryResult;
@@ -112,17 +158,35 @@ export async function processSlackEvent(input: {
     if (!result.ok) {
       if (result.retryable) {
         await input.repository.markRetryableError(payload.eventId, result.code, input.clock.now());
+        const retryableEvent: ProcessObserverEvent = {
+          event: "slack_reaction_retryable_error",
+          eventIdHash: hashedEventId,
+          code: result.code
+        };
+        input.observer?.(
+          result.retryAfterSeconds === undefined
+            ? retryableEvent
+            : { ...retryableEvent, retryAfterSeconds: result.retryAfterSeconds }
+        );
         return result.retryAfterSeconds === undefined
           ? { kind: "retryable" }
           : { kind: "retryable", retryAfterSeconds: result.retryAfterSeconds };
       }
       await input.repository.markPermanentError(payload.eventId, result.code, input.clock.now());
+      input.observer?.({ event: "slack_reaction_permanent_error", eventIdHash: hashedEventId, code: result.code });
       return { kind: "completed" };
     }
     record = await input.repository.markReactionComplete(payload.eventId, emojiName, input.clock.now());
+    input.observer?.({
+      event: "slack_reaction_succeeded",
+      eventIdHash: hashedEventId,
+      emojiName,
+      alreadyPresent: result.alreadyPresent === true
+    });
   }
 
   await input.repository.markCompleted(payload.eventId, false, input.clock.now());
+  input.observer?.({ event: "worker_completed", eventIdHash: hashedEventId, status: "completed" });
   return { kind: "completed" };
 }
 
@@ -153,15 +217,23 @@ function findStandardFallbackReplacement(
 }
 
 async function selectEmoji(input: {
+  eventIdHash: string;
   analysisText: string;
   emojiConfig: EmojiConfig;
   emojiCatalog: EmojiCatalog;
   emojiSelector: EmojiSelector;
+  observer?: ProcessObserver;
 }): Promise<EmojiSelection> {
   const hasCustomCandidates = input.emojiConfig.candidates.some((candidate) => candidate.kind === "custom");
-  const customNames = hasCustomCandidates
-    ? await input.emojiCatalog.listCustomEmojiNames().catch(() => new Set<string>())
-    : new Set<string>();
+  let customNames: ReadonlySet<string> = new Set<string>();
+  if (hasCustomCandidates) {
+    try {
+      customNames = await input.emojiCatalog.listCustomEmojiNames();
+      input.observer?.({ event: "custom_emoji_catalog_loaded", eventIdHash: input.eventIdHash, count: customNames.size });
+    } catch {
+      input.observer?.({ event: "custom_emoji_catalog_unavailable", eventIdHash: input.eventIdHash });
+    }
+  }
   const candidates = input.emojiConfig.candidates.filter(
     (candidate) => candidate.kind === "standard" || customNames.has(candidate.name)
   );
@@ -170,12 +242,16 @@ async function selectEmoji(input: {
     const selection = await input.emojiSelector.select({ analysisText: input.analysisText, candidates });
     const valid = validateSelection(selection.names, allowlist);
     if (valid !== null) {
+      input.observer?.({ event: "gemini_selection_succeeded", eventIdHash: input.eventIdHash, source: "gemini" });
       return { names: valid, source: "gemini" };
     }
   } catch {
-    return selectFallback(input.emojiConfig, allowlist);
+    const fallback = selectFallback(input.emojiConfig, allowlist);
+    input.observer?.({ event: "gemini_selection_fallback", eventIdHash: input.eventIdHash, source: "fallback_gemini_error" });
+    return fallback;
   }
   const fallback = selectFallback(input.emojiConfig, allowlist);
+  input.observer?.({ event: "gemini_selection_fallback", eventIdHash: input.eventIdHash, source: "fallback_invalid_output" });
   return { ...fallback, source: "fallback_invalid_output" };
 }
 
