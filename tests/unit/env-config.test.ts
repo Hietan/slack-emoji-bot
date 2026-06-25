@@ -31,6 +31,8 @@ describe("environment config", () => {
     const parsedWorker = loadWorkerEnv(workerEnv);
     expect(parsedWorker.targetChannelSet).toEqual(new Set(["C1", "C2"]));
     expect(parsedWorker.EMOJI_CONFIG_PATH).toBe("/app/config/emoji.default.yaml");
+    expect(parsedWorker.LOG_LEVEL).toBe("info");
+    expect(loadReceiverEnv({ ...receiverEnv, LOG_LEVEL: "debug" }).LOG_LEVEL).toBe("debug");
   });
 
   it("rejects empty or duplicate target channel IDs", () => {
@@ -50,6 +52,11 @@ describe("environment config", () => {
     const workerWithoutNodeEnv = { ...workerEnv, NODE_ENV: undefined };
     expect(() => loadReceiverEnv(receiverWithoutNodeEnv)).toThrow();
     expect(() => loadWorkerEnv(workerWithoutNodeEnv)).toThrow();
+  });
+
+  it("rejects unsupported log levels at startup", () => {
+    expect(() => loadReceiverEnv({ ...receiverEnv, LOG_LEVEL: "verbose" })).toThrow(/LOG_LEVEL/u);
+    expect(() => loadWorkerEnv({ ...workerEnv, LOG_LEVEL: "verbose" })).toThrow(/LOG_LEVEL/u);
   });
 
   it("lists configuration errors without echoing secret values", () => {

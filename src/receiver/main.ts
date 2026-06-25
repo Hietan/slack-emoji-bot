@@ -3,8 +3,8 @@ import { loadReceiverEnv } from "../config/receiver-env.js";
 import { createLogger } from "../shared/logger.js";
 import { createReceiverApp } from "./app.js";
 
-const logger = createLogger("receiver");
 const env = loadReceiverEnv();
+const logger = createLogger("receiver", env.LOG_LEVEL);
 const taskQueue = new CloudTasksQueue({
   projectId: env.GCP_PROJECT_ID,
   location: env.GCP_REGION,

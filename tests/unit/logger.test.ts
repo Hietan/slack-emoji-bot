@@ -1,9 +1,13 @@
 import { Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import pino from "pino";
-import { redactedPaths } from "../../src/shared/logger.js";
+import { createLogger, redactedPaths } from "../../src/shared/logger.js";
 
 describe("logger redaction", () => {
+  it("uses the validated configured log level", () => {
+    expect(createLogger("receiver", "debug").level).toBe("debug");
+  });
+
   it("redacts forbidden top-level and nested fields", () => {
     const lines: string[] = [];
     const stream = new Writable({

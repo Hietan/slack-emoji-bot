@@ -8,8 +8,8 @@ import { loadWorkerEnv } from "../config/worker-env.js";
 import { createLogger } from "../shared/logger.js";
 import { createWorkerApp } from "./app.js";
 
-const logger = createLogger("worker");
 const env = loadWorkerEnv();
+const logger = createLogger("worker", env.LOG_LEVEL);
 const emojiConfig = loadEmojiConfig(env.EMOJI_CONFIG_PATH);
 const app = createWorkerApp({
   env,

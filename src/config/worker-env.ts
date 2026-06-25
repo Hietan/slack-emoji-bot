@@ -5,6 +5,7 @@ import { parseTargetChannelSet } from "./target-channels.js";
 const workerEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]),
   PORT: z.coerce.number().int().positive().default(8080),
+  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   SLACK_TEAM_ID: z.string().min(1),
   SLACK_APP_ID: z.string().min(1),
   TARGET_CHANNEL_IDS: z.string().min(1),

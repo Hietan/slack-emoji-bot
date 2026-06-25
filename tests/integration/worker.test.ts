@@ -26,6 +26,7 @@ const emojiConfig: EmojiConfig = {
 const env: WorkerEnv = {
   NODE_ENV: "test",
   PORT: 8080,
+  LOG_LEVEL: "info",
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1",

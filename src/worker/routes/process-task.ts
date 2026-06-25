@@ -22,7 +22,7 @@ export function createProcessTaskRouter(input: {
   clock: Clock;
 }) {
   const router = Router();
-  const logger = createLogger("worker");
+  const logger = createLogger("worker", input.env.LOG_LEVEL);
 
   router.post("/", async (request, response) => {
     const payload = taskPayloadSchema.safeParse(request.body);

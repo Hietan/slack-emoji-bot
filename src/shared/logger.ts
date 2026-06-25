@@ -1,5 +1,7 @@
 import pino from "pino";
 
+export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace" | "silent";
+
 export const redactedPaths = [
   "text",
   "analysisText",
@@ -25,10 +27,10 @@ export const redactedPaths = [
   "*.geminiRawOutput"
 ];
 
-export function createLogger(service: "receiver" | "worker") {
+export function createLogger(service: "receiver" | "worker", level: LogLevel = "info") {
   return pino({
     name: service,
-    level: process.env.LOG_LEVEL ?? "info",
+    level,
     redact: {
       paths: redactedPaths,
       censor: "[redacted]"

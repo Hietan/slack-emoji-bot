@@ -9,7 +9,7 @@ import { createLogger } from "../../shared/logger.js";
 
 export function createSlackEventsRouter(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock: Clock }) {
   const router = Router();
-  const logger = createLogger("receiver");
+  const logger = createLogger("receiver", input.env.LOG_LEVEL);
 
   router.post("/", async (request, response) => {
     const rawBody = Buffer.isBuffer(request.body) ? request.body : Buffer.from("");
