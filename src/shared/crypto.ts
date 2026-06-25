@@ -23,6 +23,9 @@ export function verifySlackSignature(args: {
   if (timestampHeader === undefined || signatureHeader === undefined) {
     return false;
   }
+  if (!/^\d+$/u.test(timestampHeader)) {
+    return false;
+  }
   const timestamp = Number.parseInt(timestampHeader, 10);
   if (!Number.isFinite(timestamp) || Math.abs(nowSeconds - timestamp) > 300) {
     return false;

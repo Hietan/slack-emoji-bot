@@ -39,4 +39,20 @@ describe("verifySlackSignature", () => {
       })
     ).toBe(false);
   });
+
+  it("rejects malformed timestamp headers", () => {
+    const rawBody = Buffer.from("{}");
+    const timestamp = "1712345678junk";
+    const signature = `v0=${createHmac("sha256", "secret").update(`v0:${timestamp}:${rawBody.toString("utf8")}`).digest("hex")}`;
+
+    expect(
+      verifySlackSignature({
+        signingSecret: "secret",
+        timestampHeader: timestamp,
+        signatureHeader: signature,
+        rawBody,
+        nowSeconds: 1712345678
+      })
+    ).toBe(false);
+  });
 });
