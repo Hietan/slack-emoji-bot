@@ -48,6 +48,7 @@ jobs:
       - run: pnpm build
       - run: pnpm validate:config
       - run: pnpm scan:sensitive
+      - run: pnpm scan:production
       - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}

@@ -17,6 +17,7 @@
     "test:integration": "vitest run tests/integration",
     "validate:config": "tsx scripts/validate-config.ts",
     "scan:sensitive": "tsx scripts/scan-sensitive-content.ts",
+    "scan:production": "tsx scripts/scan-production-readiness.ts",
     "render:slack-manifest": "tsx scripts/render-slack-manifest.ts"
   },
   "dependencies": {
