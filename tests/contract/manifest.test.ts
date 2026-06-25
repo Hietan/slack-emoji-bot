@@ -91,6 +91,7 @@ describe("contracts", () => {
       "CODE_OF_CONDUCT.md",
       "CHANGELOG.md",
       "docs/release.md",
+      "docs/troubleshooting.md",
       ".github/pull_request_template.md",
       ".github/ISSUE_TEMPLATE/bug_report.yml",
       ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -104,6 +105,21 @@ describe("contracts", () => {
     expect(readme).toContain("docs/assets/demo-placeholder.svg");
     expect(readme).toContain("CHANGELOG.md");
     expect(readme).toContain("docs/release.md");
+    expect(readme).toContain("docs/troubleshooting.md");
+
+    const troubleshooting = readFileSync("docs/troubleshooting.md", "utf8");
+    for (const phrase of [
+      "Slack URL Verification Fails",
+      "No Reactions Are Added",
+      "Only Fallback Reactions Appear",
+      "Custom Emoji Are Ignored",
+      "Duplicate Or Partial Reactions",
+      "Deployment Fails On Secrets",
+      "Cost Looks Higher Than Expected",
+      "Do not paste Slack message text"
+    ]) {
+      expect(troubleshooting).toContain(phrase);
+    }
 
     const license = readFileSync("LICENSE", "utf8");
     expect(license).toContain("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION");
