@@ -3,6 +3,10 @@ locals {
   queue_id       = "emoji-reaction-jobs"
 }
 
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 resource "google_project_service" "required" {
   for_each = toset([
     "run.googleapis.com",
@@ -279,6 +283,12 @@ resource "google_service_account_iam_member" "receiver_task_sa_user" {
   service_account_id = google_service_account.task_invoker.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.receiver.email}"
+}
+
+resource "google_service_account_iam_member" "cloud_tasks_token_creator" {
+  service_account_id = google_service_account.task_invoker.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudtasks.iam.gserviceaccount.com"
 }
 
 resource "google_secret_manager_secret_iam_member" "receiver_signing_secret_access" {

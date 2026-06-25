@@ -212,6 +212,8 @@ describe("contracts", () => {
       "roles/cloudtasks.enqueuer",
       "roles/datastore.user",
       "roles/run.invoker",
+      "roles/iam.serviceAccountTokenCreator",
+      "gcp-sa-cloudtasks.iam.gserviceaccount.com",
       "INGRESS_TRAFFIC_INTERNAL_ONLY",
       "name  = \"NODE_ENV\"",
       "value = \"production\"",
