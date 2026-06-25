@@ -1,4 +1,5 @@
 import express from "express";
+import type { RequestHandler } from "express";
 import type { TaskQueue } from "../application/ports/task-queue.js";
 import { createSlackEventsRouter } from "./routes/slack-events.js";
 import type { ReceiverEnv } from "../config/receiver-env.js";
@@ -13,8 +14,17 @@ export function createReceiverApp(input: { env: ReceiverEnv; taskQueue: TaskQueu
   });
   app.use(
     "/slack/events",
+    requireJsonContentType,
     express.raw({ type: "application/json", limit: "256kb" }),
     createSlackEventsRouter({ env: input.env, taskQueue: input.taskQueue, clock })
   );
   return app;
 }
+
+const requireJsonContentType: RequestHandler = (request, response, next) => {
+  if (request.is("application/json") === false) {
+    response.status(415).json({ ok: false });
+    return;
+  }
+  next();
+};
