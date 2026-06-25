@@ -47,6 +47,14 @@ export function createProcessTaskRouter(input: {
       reactionClient: input.reactionClient,
       clock: input.clock,
       observer: (event) => {
+        if (event.event === "custom_emoji_catalog_unavailable" && event.code === "missing_scope") {
+          logger.error(event, event.event);
+          return;
+        }
+        if (event.event === "custom_emoji_candidates_missing") {
+          logger.warn(event, event.event);
+          return;
+        }
         logger.info(event, event.event);
       }
     });

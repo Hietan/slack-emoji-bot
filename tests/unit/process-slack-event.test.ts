@@ -5,6 +5,10 @@ import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { eventIdHash } from "../../src/shared/crypto.js";
 import { MemoryProcessRepository } from "../fixtures/memory-process-repository.js";
 
+function slackError(code: string): Error & { data: { error: string } } {
+  return Object.assign(new Error(code), { data: { error: code } });
+}
+
 function emoji(name: string, kind: "standard" | "custom" = "standard") {
   return { name, kind, description: "a", useWhen: "when", avoidWhen: "avoid" };
 }
@@ -145,7 +149,8 @@ describe("processSlackEvent", () => {
     });
     expect(retryableEvents).toContainEqual({
       event: "custom_emoji_catalog_unavailable",
-      eventIdHash: eventIdHash("EvObservedRetryable")
+      eventIdHash: eventIdHash("EvObservedRetryable"),
+      code: "unavailable"
     });
     expect(retryableEvents).toContainEqual({
       event: "gemini_selection_fallback",
@@ -170,6 +175,43 @@ describe("processSlackEvent", () => {
     expect(permanentEvents).toContainEqual({
       event: "slack_reaction_permanent_error",
       eventIdHash: eventIdHash("EvObservedPermanent"),
+      code: "missing_scope"
+    });
+
+    const missingCustomEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedMissingCustom" },
+      repository: new MemoryProcessRepository(),
+      emojiConfig: {
+        candidates: [...emojiConfig.candidates, emoji("shipit", "custom"), emoji("nice_research", "custom")],
+        fallback: emojiConfig.fallback
+      },
+      emojiCatalog: { listCustomEmojiNames: () => Promise.resolve(new Set(["shipit"])) },
+      emojiSelector: { select: () => Promise.reject(new Error("timeout")) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
+      observer: (event) => missingCustomEvents.push(event)
+    });
+    expect(missingCustomEvents).toContainEqual({
+      event: "custom_emoji_candidates_missing",
+      eventIdHash: eventIdHash("EvObservedMissingCustom"),
+      emojiNames: ["nice_research"]
+    });
+
+    const missingScopeEvents: unknown[] = [];
+    await processSlackEvent({
+      ...base,
+      payload: { ...payload, eventId: "EvObservedMissingScope" },
+      repository: new MemoryProcessRepository(),
+      emojiConfig: { candidates: [...emojiConfig.candidates, emoji("shipit", "custom")], fallback: emojiConfig.fallback },
+      emojiCatalog: { listCustomEmojiNames: () => Promise.reject(slackError("missing_scope")) },
+      emojiSelector: { select: () => Promise.reject(new Error("timeout")) },
+      reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
+      observer: (event) => missingScopeEvents.push(event)
+    });
+    expect(missingScopeEvents).toContainEqual({
+      event: "custom_emoji_catalog_unavailable",
+      eventIdHash: eventIdHash("EvObservedMissingScope"),
       code: "missing_scope"
     });
   });

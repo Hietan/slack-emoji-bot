@@ -20,7 +20,8 @@ export type ProcessObserverEvent =
     }
   | { event: "worker_already_completed"; eventIdHash: string; status: "already_completed" }
   | { event: "custom_emoji_catalog_loaded"; eventIdHash: string; count: number }
-  | { event: "custom_emoji_catalog_unavailable"; eventIdHash: string }
+  | { event: "custom_emoji_catalog_unavailable"; eventIdHash: string; code: "missing_scope" | "unavailable" }
+  | { event: "custom_emoji_candidates_missing"; eventIdHash: string; emojiNames: string[] }
   | { event: "gemini_selection_succeeded"; eventIdHash: string; source: "gemini" }
   | {
       event: "gemini_selection_fallback";
@@ -224,14 +225,22 @@ async function selectEmoji(input: {
   emojiSelector: EmojiSelector;
   observer?: ProcessObserver;
 }): Promise<EmojiSelection> {
-  const hasCustomCandidates = input.emojiConfig.candidates.some((candidate) => candidate.kind === "custom");
+  const customCandidates = input.emojiConfig.candidates.filter((candidate) => candidate.kind === "custom");
   let customNames: ReadonlySet<string> = new Set<string>();
-  if (hasCustomCandidates) {
+  if (customCandidates.length > 0) {
     try {
       customNames = await input.emojiCatalog.listCustomEmojiNames();
       input.observer?.({ event: "custom_emoji_catalog_loaded", eventIdHash: input.eventIdHash, count: customNames.size });
-    } catch {
-      input.observer?.({ event: "custom_emoji_catalog_unavailable", eventIdHash: input.eventIdHash });
+      const missingNames = customCandidates.map((candidate) => candidate.name).filter((name) => !customNames.has(name));
+      if (missingNames.length > 0) {
+        input.observer?.({ event: "custom_emoji_candidates_missing", eventIdHash: input.eventIdHash, emojiNames: missingNames });
+      }
+    } catch (error: unknown) {
+      input.observer?.({
+        event: "custom_emoji_catalog_unavailable",
+        eventIdHash: input.eventIdHash,
+        code: isMissingScopeError(error) ? "missing_scope" : "unavailable"
+      });
     }
   }
   const candidates = input.emojiConfig.candidates.filter(
@@ -266,4 +275,12 @@ export function fallbackSelector(emojiConfig: EmojiConfig): EmojiSelector {
     select: (request: { candidates: EmojiCandidate[] }) =>
       Promise.resolve({ ...selectFallback(emojiConfig, new Set(request.candidates.map((candidate) => candidate.name))), source: "fallback_gemini_error" })
   };
+}
+
+function isMissingScopeError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("data" in error)) {
+    return false;
+  }
+  const data = error.data as { error?: unknown };
+  return data.error === "missing_scope";
 }
