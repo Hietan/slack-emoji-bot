@@ -141,6 +141,16 @@ describe("contracts", () => {
     expect(bootstrap).toContain("Do not create or store a long-lived service account JSON key.");
   });
 
+  it("deployment creates the Artifact Registry repository before pushing images", () => {
+    const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const repoApplyIndex = deployWorkflow.indexOf("-target=google_artifact_registry_repository.repo");
+    const dockerPushIndex = deployWorkflow.indexOf("docker push");
+    const fullApplyIndex = deployWorkflow.indexOf("terraform -chdir=infra/terraform apply -auto-approve -var");
+    expect(repoApplyIndex).toBeGreaterThan(-1);
+    expect(dockerPushIndex).toBeGreaterThan(repoApplyIndex);
+    expect(fullApplyIndex).toBeGreaterThan(dockerPushIndex);
+  });
+
   it("deployment docs cover the required rollout sequence and secret containers", () => {
     const deployment = readFileSync("docs/deployment.md", "utf8");
     for (const phrase of [
