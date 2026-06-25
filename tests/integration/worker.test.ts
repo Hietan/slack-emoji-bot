@@ -40,7 +40,6 @@ const env: WorkerEnv = {
   FIRESTORE_DATABASE_ID: "(default)",
   PROCESS_RECORD_TTL_DAYS: 7,
   DRY_RUN: false,
-  LEASE_SECONDS: 1,
   targetChannelSet: new Set(["C1"])
 };
 

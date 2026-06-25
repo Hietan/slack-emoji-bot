@@ -23,8 +23,7 @@ const workerEnvSchema = z.object({
   DRY_RUN: z
     .enum(["true", "false"])
     .default("false")
-    .transform((value) => value === "true"),
-  LEASE_SECONDS: z.coerce.number().int().positive().default(120)
+    .transform((value) => value === "true")
 });
 
 export type WorkerEnv = z.infer<typeof workerEnvSchema> & {

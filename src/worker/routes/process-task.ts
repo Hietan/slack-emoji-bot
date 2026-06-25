@@ -10,6 +10,8 @@ import { taskPayloadSchema } from "../../domain/task-payload.js";
 import type { Clock } from "../../shared/clock.js";
 import { createLogger } from "../../shared/logger.js";
 
+const LEASE_SECONDS = 120;
+
 export function createProcessTaskRouter(input: {
   env: WorkerEnv;
   emojiConfig: EmojiConfig;
@@ -36,7 +38,7 @@ export function createProcessTaskRouter(input: {
         apiAppId: input.env.SLACK_APP_ID,
         targetChannelIds: input.env.targetChannelSet,
         dryRun: input.env.DRY_RUN,
-        leaseSeconds: input.env.LEASE_SECONDS
+        leaseSeconds: LEASE_SECONDS
       },
       emojiConfig: input.emojiConfig,
       repository: input.repository,
