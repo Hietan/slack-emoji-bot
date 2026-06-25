@@ -16,7 +16,7 @@ const workerEnvSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
-  EMOJI_CONFIG_PATH: z.string().min(1).default("config/emoji.default.yaml"),
+  EMOJI_CONFIG_PATH: z.string().min(1).default("/app/config/emoji.default.yaml"),
   CUSTOM_EMOJI_CACHE_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
   FIRESTORE_DATABASE_ID: z.string().min(1).default("(default)"),
   PROCESS_RECORD_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),

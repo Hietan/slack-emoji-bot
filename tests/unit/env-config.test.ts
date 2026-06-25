@@ -28,7 +28,9 @@ describe("environment config", () => {
   it("parses unique target channel IDs", () => {
     expect(parseTargetChannelSet(" C1 , C2 ")).toEqual(new Set(["C1", "C2"]));
     expect(loadReceiverEnv(receiverEnv).targetChannelSet).toEqual(new Set(["C1", "C2"]));
-    expect(loadWorkerEnv(workerEnv).targetChannelSet).toEqual(new Set(["C1", "C2"]));
+    const parsedWorker = loadWorkerEnv(workerEnv);
+    expect(parsedWorker.targetChannelSet).toEqual(new Set(["C1", "C2"]));
+    expect(parsedWorker.EMOJI_CONFIG_PATH).toBe("/app/config/emoji.default.yaml");
   });
 
   it("rejects empty or duplicate target channel IDs", () => {

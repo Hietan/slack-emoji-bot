@@ -50,6 +50,7 @@ describe("contracts", () => {
     }
     expect(envExample).not.toMatch(/AIza[0-9A-Za-z_-]+/u);
     expect(envExample).not.toMatch(/xox[baprs]-[0-9A-Za-z-]+/u);
+    expect(envExample).toContain("EMOJI_CONFIG_PATH=/app/config/emoji.default.yaml");
   });
 
   it("task payload rejects fields that must never be enqueued", () => {
