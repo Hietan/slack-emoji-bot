@@ -27,6 +27,10 @@ on:
         description: Acknowledge Gemini unpaid service terms
         required: true
         default: "false"
+      image_version_tag:
+        description: Optional release image tag, for example v1.0.0
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -58,8 +62,22 @@ jobs:
       - run: terraform -chdir=infra/terraform init
       - run: terraform -chdir=infra/terraform apply -auto-approve -target=google_project_service.required -target=google_artifact_registry_repository.repo -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: gcloud auth configure-docker "${{ inputs.region }}-docker.pkg.dev" --quiet
-      - run: docker build -t "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}" .
+      - run: |
+          image="${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot"
+          docker_args=(-t "$image:${{ github.sha }}")
+          if [ -n "${{ inputs.image_version_tag }}" ]; then
+            if [[ ! "${{ inputs.image_version_tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "image_version_tag must look like vMAJOR.MINOR.PATCH" >&2
+              exit 1
+            fi
+            docker_args+=(-t "$image:${{ inputs.image_version_tag }}")
+          fi
+          docker build "${docker_args[@]}" .
       - run: docker push "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: |
+          if [ -n "${{ inputs.image_version_tag }}" ]; then
+            docker push "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ inputs.image_version_tag }}"
+          fi
       - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: |

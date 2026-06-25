@@ -150,6 +150,17 @@ describe("contracts", () => {
     expect(deployWorkflow).toContain("pnpm scan:production");
   });
 
+  it("deploy workflow supports immutable Git SHA and optional SemVer image tags", () => {
+    const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(deployWorkflow).toContain("image_version_tag");
+    expect(deployWorkflow).toContain("vMAJOR.MINOR.PATCH");
+    expect(deployWorkflow).toContain(":${{ github.sha }}");
+    expect(deployWorkflow).toContain(":${{ inputs.image_version_tag }}");
+    expect(deployWorkflow).toContain("^v[0-9]+\\.[0-9]+\\.[0-9]+$");
+    expect(deployWorkflow).not.toContain(":latest");
+  });
+
   it("deployment uses Workload Identity Federation without long-lived JSON keys", () => {
     const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
     expect(deployWorkflow).toContain("google-github-actions/auth@");
