@@ -31,6 +31,15 @@ function signedPost(body: unknown) {
 }
 
 describe("receiver app", () => {
+  it("returns health status without external calls", async () => {
+    const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
+    const app = createReceiverApp({ env, taskQueue: { enqueue }, clock });
+    const response = await request(app).get("/healthz");
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, service: "receiver" });
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
   it("enqueues one task for a valid signed Slack event", async () => {
     const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
     const taskQueue: TaskQueue = { enqueue };
@@ -75,6 +84,63 @@ describe("receiver app", () => {
       .send(signed.raw);
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ challenge: "abc" });
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid signatures before parsing JSON", async () => {
+    const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
+    const app = createReceiverApp({ env, taskQueue: { enqueue }, clock });
+    const response = await request(app)
+      .post("/slack/events")
+      .set("content-type", "application/json")
+      .set("x-slack-request-timestamp", String(Math.floor(clock.now().getTime() / 1000)))
+      .set("x-slack-signature", "v0=bad")
+      .send("{not json");
+    expect(response.status).toBe(401);
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for invalid JSON with a valid signature", async () => {
+    const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
+    const app = createReceiverApp({ env, taskQueue: { enqueue }, clock });
+    const raw = "{not json";
+    const timestamp = String(Math.floor(clock.now().getTime() / 1000));
+    const signature = `v0=${createHmac("sha256", env.SLACK_SIGNING_SECRET).update(`v0:${timestamp}:${raw}`).digest("hex")}`;
+    const response = await request(app)
+      .post("/slack/events")
+      .set("content-type", "application/json")
+      .set("x-slack-request-timestamp", timestamp)
+      .set("x-slack-signature", signature)
+      .send(raw);
+    expect(response.status).toBe(400);
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 for team or app mismatches", async () => {
+    const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
+    const app = createReceiverApp({ env, taskQueue: { enqueue }, clock });
+    const signed = signedPost({
+      type: "event_callback",
+      team_id: "T2",
+      api_app_id: "A1",
+      event_id: "Ev1",
+      event_time: 1712345678,
+      event: {
+        type: "message",
+        channel_type: "channel",
+        channel: "C1",
+        user: "U1",
+        ts: "1712345678.123456",
+        text: "hello"
+      }
+    });
+    const response = await request(app)
+      .post("/slack/events")
+      .set("content-type", "application/json")
+      .set("x-slack-request-timestamp", signed.timestamp)
+      .set("x-slack-signature", signed.signature)
+      .send(signed.raw);
+    expect(response.status).toBe(403);
     expect(enqueue).not.toHaveBeenCalled();
   });
 });

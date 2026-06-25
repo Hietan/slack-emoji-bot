@@ -17,4 +17,56 @@ describe("contracts", () => {
     expect(loadEmojiConfig().fallback).toHaveLength(3);
     expect(taskPayloadSchema.shape.schemaVersion.value).toBe(1);
   });
+
+  it(".env.example documents all runtime configuration keys without real secrets", () => {
+    const envExample = readFileSync(".env.example", "utf8");
+    for (const key of [
+      "NODE_ENV",
+      "PORT",
+      "LOG_LEVEL",
+      "SLACK_TEAM_ID",
+      "SLACK_APP_ID",
+      "TARGET_CHANNEL_IDS",
+      "SLACK_SIGNING_SECRET",
+      "GCP_PROJECT_ID",
+      "GCP_REGION",
+      "CLOUD_TASKS_QUEUE_ID",
+      "WORKER_URL",
+      "TASK_INVOKER_SERVICE_ACCOUNT_EMAIL",
+      "MAX_ANALYSIS_TEXT_CHARS",
+      "SLACK_BOT_TOKEN",
+      "GEMINI_API_KEY",
+      "GEMINI_MODEL",
+      "GEMINI_TIMEOUT_MS",
+      "SLACK_TIMEOUT_MS",
+      "GEMINI_UNPAID_TERMS_ACKNOWLEDGED",
+      "EMOJI_CONFIG_PATH",
+      "CUSTOM_EMOJI_CACHE_TTL_SECONDS",
+      "FIRESTORE_DATABASE_ID",
+      "PROCESS_RECORD_TTL_DAYS",
+      "DRY_RUN"
+    ]) {
+      expect(envExample).toContain(`${key}=`);
+    }
+    expect(envExample).not.toMatch(/AIza[0-9A-Za-z_-]+/u);
+    expect(envExample).not.toMatch(/xox[baprs]-[0-9A-Za-z-]+/u);
+  });
+
+  it("task payload rejects fields that must never be enqueued", () => {
+    const payload = {
+      schemaVersion: 1,
+      eventId: "Ev1",
+      teamId: "T1",
+      apiAppId: "A1",
+      eventTime: 1712345678,
+      channelId: "C1",
+      messageTs: "1712345678.123456",
+      analysisText: "hello",
+      textSha256: "a".repeat(64),
+      receivedAt: "2026-06-25T00:00:00.000Z",
+      userId: "U1",
+      rawText: "secret"
+    };
+    expect(taskPayloadSchema.strict().safeParse(payload).success).toBe(false);
+  });
 });

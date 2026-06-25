@@ -1,6 +1,6 @@
 import pino from "pino";
 
-const redactedPaths = [
+export const redactedPaths = [
   "text",
   "analysisText",
   "rawBody",
@@ -11,7 +11,18 @@ const redactedPaths = [
   "slackToken",
   "geminiApiKey",
   "systemInstruction",
-  "geminiRawOutput"
+  "geminiRawOutput",
+  "*.text",
+  "*.analysisText",
+  "*.rawBody",
+  "*.requestBody",
+  "*.responseBody",
+  "*.authorization",
+  "*.slackSignature",
+  "*.slackToken",
+  "*.geminiApiKey",
+  "*.systemInstruction",
+  "*.geminiRawOutput"
 ];
 
 export function createLogger(service: "receiver" | "worker") {
