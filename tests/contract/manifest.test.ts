@@ -77,6 +77,8 @@ describe("contracts", () => {
       "SECURITY.md",
       "CONTRIBUTING.md",
       "CODE_OF_CONDUCT.md",
+      "CHANGELOG.md",
+      "docs/release.md",
       ".github/pull_request_template.md",
       ".github/ISSUE_TEMPLATE/bug_report.yml",
       ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -88,10 +90,37 @@ describe("contracts", () => {
     const readme = readFileSync("README.md", "utf8");
     expect(readme).toContain("Demo Placeholder");
     expect(readme).toContain("docs/assets/demo-placeholder.svg");
+    expect(readme).toContain("CHANGELOG.md");
+    expect(readme).toContain("docs/release.md");
 
     const license = readFileSync("LICENSE", "utf8");
     expect(license).toContain("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION");
     expect(license).toContain("Grant of Patent License");
+  });
+
+  it("release documentation follows SemVer and keeps secret material out of notes", () => {
+    const changelog = readFileSync("CHANGELOG.md", "utf8");
+    expect(changelog).toContain("Keep a Changelog");
+    expect(changelog).toContain("Semantic Versioning");
+    expect(changelog).toContain("## [Unreleased]");
+    expect(changelog).toContain("## [1.0.0] - TBD");
+
+    const release = readFileSync("docs/release.md", "utf8");
+    for (const phrase of [
+      "Semantic Versioning",
+      "vMAJOR.MINOR.PATCH",
+      "pnpm test --coverage",
+      "terraform -chdir=infra/terraform validate",
+      "docker build .",
+      "DRY_RUN=true",
+      "DRY_RUN=false",
+      "Cloud Logging",
+      "git tag v1.0.0",
+      "Git SHA and `v1.0.0`",
+      "Do not include Slack message text"
+    ]) {
+      expect(release).toContain(phrase);
+    }
   });
 
   it("deployment uses Workload Identity Federation without long-lived JSON keys", () => {

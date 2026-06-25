@@ -77,6 +77,10 @@ The Terraform defaults use Cloud Run min instances of 0 and bounded concurrency.
 - Only fallback reactions appear: check Gemini API key, model, and response logs without exposing message text.
 - Custom emoji are ignored: confirm `emoji:read` scope and that the emoji exists in Slack.
 
+## Releases
+
+See `CHANGELOG.md` for release notes and `docs/release.md` for the release checklist.
+
 ## License
 
 Apache License 2.0. See `LICENSE`.
