@@ -173,6 +173,29 @@ describe("contracts", () => {
     expect(fullApplyIndex).toBeGreaterThan(dockerPushIndex);
   });
 
+  it("Docker image is a shared non-root runtime for receiver and worker", () => {
+    const dockerfile = readFileSync("Dockerfile", "utf8");
+    const terraform = readFileSync("infra/terraform/main.tf", "utf8");
+
+    for (const phrase of [
+      "FROM node:24-slim AS base",
+      "RUN pnpm install --frozen-lockfile --prod",
+      "COPY --from=build /app/dist ./dist",
+      "COPY config ./config",
+      "USER node",
+      "CMD [\"node\", \"dist/receiver/main.js\"]"
+    ]) {
+      expect(dockerfile).toContain(phrase);
+    }
+
+    expect(terraform).toContain("image   = var.image");
+    expect(terraform).toContain("command = [\"node\", \"dist/receiver/main.js\"]");
+    expect(terraform).toContain("command = [\"node\", \"dist/worker/main.js\"]");
+    expect(dockerfile).not.toContain("SLACK_BOT_TOKEN");
+    expect(dockerfile).not.toContain("GEMINI_API_KEY");
+    expect(dockerfile).not.toContain("SLACK_SIGNING_SECRET");
+  });
+
   it("deployment docs cover the required rollout sequence and secret containers", () => {
     const deployment = readFileSync("docs/deployment.md", "utf8");
     for (const phrase of [
