@@ -33,6 +33,15 @@ resource "google_firestore_database" "database" {
   depends_on  = [google_project_service.required]
 }
 
+resource "google_firestore_field" "process_expires_at" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "slackEventProcesses"
+  field      = "expiresAt"
+
+  ttl_config {}
+}
+
 resource "google_secret_manager_secret" "secrets" {
   for_each = toset([
     "${local.service_prefix}-slack-signing-secret",

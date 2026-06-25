@@ -19,7 +19,7 @@ describe("emoji domain", () => {
         },
         allowlist
       )
-    ).toEqual({ names: ["eyes", "white_check_mark", "tada"], source: "fallback" });
+    ).toEqual({ names: ["eyes", "white_check_mark", "tada"], source: "fallback_gemini_error" });
     expect(() =>
       selectFallback(
         {

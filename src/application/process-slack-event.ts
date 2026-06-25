@@ -51,7 +51,7 @@ export async function processSlackEvent(input: {
   }
 
   let record = lease.record;
-  if (record.selectedEmojiNames === null) {
+  if (record.selectedEmojis === null) {
     const selection = await selectEmoji({
       analysisText: payload.analysisText,
       emojiConfig: input.emojiConfig,
@@ -66,7 +66,7 @@ export async function processSlackEvent(input: {
     return { kind: "completed" };
   }
 
-  const selectedEmojiNames = record.selectedEmojiNames;
+  const selectedEmojiNames = record.selectedEmojis;
   if (selectedEmojiNames === null) {
     await input.repository.markPermanentError(payload.eventId, "selection_missing", input.clock.now());
     return { kind: "completed" };
@@ -79,7 +79,7 @@ export async function processSlackEvent(input: {
     if (emojiName === undefined) {
       continue;
     }
-    if (record.completedEmojiNames.includes(emojiName)) {
+    if (record.completedEmojis.includes(emojiName)) {
       continue;
     }
     let result = await input.reactionClient.addReaction({
@@ -88,13 +88,13 @@ export async function processSlackEvent(input: {
       emojiName
     });
     if (!result.ok && result.code === "invalid_name" && !replacedInvalidNames.has(emojiName)) {
-      const replacement = findStandardFallbackReplacement(input.emojiConfig, currentSelection, record.completedEmojiNames);
+      const replacement = findStandardFallbackReplacement(input.emojiConfig, currentSelection, record.completedEmojis);
       if (replacement !== null) {
         replacedInvalidNames.add(emojiName);
         currentSelection = replaceAt(currentSelection, index, replacement);
         record = await input.repository.persistSelection(
           payload.eventId,
-          { names: currentSelection, source: record.selectionSource ?? "fallback" },
+          { names: currentSelection, source: record.selectionSource ?? "fallback_invalid_output" },
           input.clock.now()
         );
         const retryResult = await input.reactionClient.addReaction({
@@ -111,6 +111,7 @@ export async function processSlackEvent(input: {
     }
     if (!result.ok) {
       if (result.retryable) {
+        await input.repository.markRetryableError(payload.eventId, result.code, input.clock.now());
         return result.retryAfterSeconds === undefined
           ? { kind: "retryable" }
           : { kind: "retryable", retryAfterSeconds: result.retryAfterSeconds };
@@ -174,7 +175,8 @@ async function selectEmoji(input: {
   } catch {
     return selectFallback(input.emojiConfig, allowlist);
   }
-  return selectFallback(input.emojiConfig, allowlist);
+  const fallback = selectFallback(input.emojiConfig, allowlist);
+  return { ...fallback, source: "fallback_invalid_output" };
 }
 
 export function standardOnlyCatalog(): EmojiCatalog {
@@ -186,6 +188,6 @@ export function standardOnlyCatalog(): EmojiCatalog {
 export function fallbackSelector(emojiConfig: EmojiConfig): EmojiSelector {
   return {
     select: (request: { candidates: EmojiCandidate[] }) =>
-      Promise.resolve(selectFallback(emojiConfig, new Set(request.candidates.map((candidate) => candidate.name))))
+      Promise.resolve({ ...selectFallback(emojiConfig, new Set(request.candidates.map((candidate) => candidate.name))), source: "fallback_gemini_error" })
   };
 }

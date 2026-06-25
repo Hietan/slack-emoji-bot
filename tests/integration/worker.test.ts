@@ -88,6 +88,6 @@ describe("worker app", () => {
     });
     const response = await request(app).post("/tasks/process").send({ ...payload, eventId: "Ev2" });
     expect(response.status).toBe(204);
-    expect(repository.records.get("Ev2")?.selectedEmojiNames).toEqual(["eyes", "white_check_mark", "tada"]);
+    expect(repository.records.get("Ev2")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
   });
 });

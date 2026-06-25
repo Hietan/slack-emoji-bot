@@ -1,8 +1,16 @@
 import type { EmojiSelectionSource } from "./emoji.js";
 
-export type ProcessStatus = "processing" | "completed" | "permanent_error";
+export type ProcessStatus = "processing" | "retryable_error" | "completed" | "permanent_error";
+
+export type ProcessLastError = {
+  stage: "gemini" | "emoji_catalog" | "slack" | "firestore" | "unknown";
+  code: string;
+  retryable: boolean;
+  occurredAt: Date;
+};
 
 export type ProcessRecord = {
+  schemaVersion: 1;
   eventId: string;
   status: ProcessStatus;
   teamId: string;
@@ -10,13 +18,16 @@ export type ProcessRecord = {
   channelId: string;
   messageTs: string;
   textSha256: string;
-  selectedEmojiNames: [string, string, string] | null;
+  selectedEmojis: [string, string, string] | null;
   selectionSource: EmojiSelectionSource | null;
-  completedEmojiNames: string[];
+  completedEmojis: string[];
   leaseOwner: string | null;
   leaseExpiresAt: Date | null;
-  attempts: number;
+  attemptCount: number;
   dryRun: boolean;
+  lastError: ProcessLastError | null;
   createdAt: Date;
   updatedAt: Date;
+  completedAt: Date | null;
+  expiresAt: Date;
 };

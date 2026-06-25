@@ -12,5 +12,6 @@ export type ProcessRepository = {
   persistSelection(eventId: string, selection: EmojiSelection, now: Date): Promise<ProcessRecord>;
   markReactionComplete(eventId: string, emojiName: string, now: Date): Promise<ProcessRecord>;
   markCompleted(eventId: string, dryRun: boolean, now: Date): Promise<ProcessRecord>;
+  markRetryableError(eventId: string, code: string, now: Date): Promise<ProcessRecord>;
   markPermanentError(eventId: string, code: string, now: Date): Promise<ProcessRecord>;
 };

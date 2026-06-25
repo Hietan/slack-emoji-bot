@@ -14,7 +14,7 @@ const emojiConfig = loadEmojiConfig(env.EMOJI_CONFIG_PATH);
 const app = createWorkerApp({
   env,
   emojiConfig,
-  repository: new FirestoreProcessRepository(new Firestore({ databaseId: env.FIRESTORE_DATABASE_ID })),
+  repository: new FirestoreProcessRepository(new Firestore({ databaseId: env.FIRESTORE_DATABASE_ID }), env.PROCESS_RECORD_TTL_DAYS),
   emojiCatalog: new SlackEmojiCatalog(env.SLACK_BOT_TOKEN, undefined, env.CUSTOM_EMOJI_CACHE_TTL_SECONDS),
   emojiSelector: new GeminiEmojiSelector({ apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL, timeoutMs: env.GEMINI_TIMEOUT_MS }),
   reactionClient: new SlackReactionClient(env.SLACK_BOT_TOKEN, undefined, env.SLACK_TIMEOUT_MS)

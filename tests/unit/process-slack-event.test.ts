@@ -66,6 +66,9 @@ describe("processSlackEvent", () => {
     if (record === undefined) {
       throw new Error("missing test record");
     }
+    expect(record.status).toBe("retryable_error");
+    expect(record.lastError).toMatchObject({ stage: "slack", code: "service_unavailable", retryable: true });
+    expect(record.expiresAt.toISOString()).toBe("2026-07-02T00:00:00.000Z");
     record.leaseExpiresAt = new Date("2026-06-24T00:00:00.000Z");
     await expect(processSlackEvent({ ...base, payload, repository, emojiSelector: selector, reactionClient })).resolves.toEqual({ kind: "completed" });
 
@@ -78,7 +81,7 @@ describe("processSlackEvent", () => {
     const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
     const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "eyes", "nope"] as [string, string, string], source: "gemini" as const })) };
     await processSlackEvent({ ...base, payload: { ...payload, eventId: "Ev2" }, repository, emojiSelector: selector, reactionClient });
-    expect(repository.records.get("Ev2")?.selectedEmojiNames).toEqual(["eyes", "white_check_mark", "tada"]);
+    expect(repository.records.get("Ev2")?.selectedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
   });
 
   it("marks dry runs complete without calling Slack", async () => {
@@ -117,6 +120,6 @@ describe("processSlackEvent", () => {
     ).resolves.toEqual({ kind: "completed" });
 
     expect(calls).toEqual(["rocket", "tada", "eyes", "white_check_mark"]);
-    expect(repository.records.get("Ev4")?.selectedEmojiNames).toEqual(["tada", "eyes", "white_check_mark"]);
+    expect(repository.records.get("Ev4")?.selectedEmojis).toEqual(["tada", "eyes", "white_check_mark"]);
   });
 });

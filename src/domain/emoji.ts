@@ -23,7 +23,7 @@ export type EmojiConfig = {
   fallback: string[];
 };
 
-export type EmojiSelectionSource = "gemini" | "fallback";
+export type EmojiSelectionSource = "gemini" | "fallback_gemini_error" | "fallback_invalid_output" | "fallback_no_custom_catalog";
 
 export type EmojiSelection = {
   names: [string, string, string];
@@ -74,5 +74,5 @@ export function selectFallback(config: EmojiConfig, allowlist: ReadonlySet<strin
   if (selected === null) {
     throw new Error("fallback_candidates_unavailable");
   }
-  return { names: selected, source: "fallback" };
+  return { names: selected, source: "fallback_gemini_error" };
 }
