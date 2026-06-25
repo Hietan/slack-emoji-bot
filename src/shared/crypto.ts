@@ -30,8 +30,11 @@ export function verifySlackSignature(args: {
   if (!Number.isFinite(timestamp) || Math.abs(nowSeconds - timestamp) > 300) {
     return false;
   }
-  const base = `v0:${timestampHeader}:${rawBody.toString("utf8")}`;
-  const expected = `v0=${createHmac("sha256", signingSecret).update(base).digest("hex")}`;
+  const expectedDigest = createHmac("sha256", signingSecret)
+    .update(`v0:${timestampHeader}:`, "utf8")
+    .update(rawBody)
+    .digest("hex");
+  const expected = `v0=${expectedDigest}`;
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(signatureHeader);
   if (expectedBuffer.length !== actualBuffer.length) {
