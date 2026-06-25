@@ -169,7 +169,10 @@ resource "google_cloud_run_v2_service" "receiver" {
     percent = 100
   }
 
-  depends_on = [google_project_service.required]
+  depends_on = [
+    google_project_service.required,
+    google_secret_manager_secret_iam_member.receiver_signing_secret_access
+  ]
 }
 
 resource "google_cloud_run_v2_service" "worker" {
@@ -248,7 +251,11 @@ resource "google_cloud_run_v2_service" "worker" {
     percent = 100
   }
 
-  depends_on = [google_project_service.required]
+  depends_on = [
+    google_project_service.required,
+    google_secret_manager_secret_iam_member.worker_slack_token_access,
+    google_secret_manager_secret_iam_member.worker_gemini_key_access
+  ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "receiver_public" {
