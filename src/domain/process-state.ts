@@ -14,7 +14,6 @@ export type ProcessRecord = {
   eventId: string;
   status: ProcessStatus;
   teamId: string;
-  apiAppId: string;
   channelId: string;
   messageTs: string;
   textSha256: string;

@@ -71,6 +71,16 @@ describe("contracts", () => {
     expect(taskPayloadSchema.strict().safeParse(payload).success).toBe(false);
   });
 
+  it("Firestore process records keep only the specified durable metadata", () => {
+    const processState = readFileSync("src/domain/process-state.ts", "utf8");
+    const firestoreRepository = readFileSync("src/adapters/firestore-process-repository.ts", "utf8");
+
+    expect(taskPayloadSchema.shape.apiAppId).toBeDefined();
+    expect(processState).not.toContain("apiAppId: string");
+    expect(firestoreRepository).not.toContain("apiAppId: payload.apiAppId");
+    expect(firestoreRepository).toContain("apiAppId?: string");
+  });
+
   it("OSS repository support files are present", () => {
     for (const path of [
       "README.md",

@@ -35,7 +35,6 @@ export class MemoryProcessRepository implements ProcessRepository {
       eventId: payload.eventId,
       status: "processing",
       teamId: payload.teamId,
-      apiAppId: payload.apiAppId,
       channelId: payload.channelId,
       messageTs: payload.messageTs,
       textSha256: payload.textSha256,

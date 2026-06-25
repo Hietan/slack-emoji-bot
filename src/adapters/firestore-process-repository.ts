@@ -6,6 +6,7 @@ import type { TaskPayload } from "../domain/task-payload.js";
 import { sha256Hex } from "../shared/crypto.js";
 
 type StoredRecord = Omit<ProcessRecord, "createdAt" | "updatedAt" | "leaseExpiresAt" | "completedAt" | "expiresAt" | "lastError"> & {
+  apiAppId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   leaseExpiresAt: Timestamp | null;
@@ -59,7 +60,6 @@ export class FirestoreProcessRepository implements ProcessRepository {
         eventId: payload.eventId,
         status: "processing",
         teamId: payload.teamId,
-        apiAppId: payload.apiAppId,
         channelId: payload.channelId,
         messageTs: payload.messageTs,
         textSha256: payload.textSha256,
@@ -163,7 +163,19 @@ export class FirestoreProcessRepository implements ProcessRepository {
 
 function toRecord(data: StoredRecord): ProcessRecord {
   return {
-    ...data,
+    schemaVersion: data.schemaVersion,
+    eventId: data.eventId,
+    status: data.status,
+    teamId: data.teamId,
+    channelId: data.channelId,
+    messageTs: data.messageTs,
+    textSha256: data.textSha256,
+    selectedEmojis: data.selectedEmojis,
+    selectionSource: data.selectionSource,
+    completedEmojis: data.completedEmojis,
+    leaseOwner: data.leaseOwner,
+    attemptCount: data.attemptCount,
+    dryRun: data.dryRun,
     createdAt: data.createdAt.toDate(),
     updatedAt: data.updatedAt.toDate(),
     leaseExpiresAt: data.leaseExpiresAt?.toDate() ?? null,
