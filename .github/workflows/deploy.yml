@@ -23,6 +23,10 @@ on:
         description: Run without calling Slack reactions.add
         required: true
         default: "true"
+      gemini_unpaid_terms_acknowledged:
+        description: Acknowledge Gemini unpaid service terms
+        required: true
+        default: "false"
 
 jobs:
   deploy:
@@ -53,6 +57,6 @@ jobs:
       - run: docker push "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
       - run: terraform -chdir=infra/terraform init
-      - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
-      - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: echo "Receiver URL=$(terraform -chdir=infra/terraform output -raw receiver_url)" >> "$GITHUB_STEP_SUMMARY"

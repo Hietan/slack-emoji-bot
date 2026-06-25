@@ -2,16 +2,17 @@ import { describe, expect, it } from "vitest";
 import { parseEmojiConfig } from "../../src/config/emoji-config.js";
 
 const valid = {
-  schemaVersion: 1,
-  candidates: [
-    { name: "eyes", kind: "standard", description: "a" },
-    { name: "white_check_mark", kind: "standard", description: "a" },
-    { name: "tada", kind: "standard", description: "a" },
-    { name: "pray", kind: "standard", description: "a" },
-    { name: "bulb", kind: "standard", description: "a" },
-    { name: "rocket", kind: "standard", description: "a" }
-  ],
+  version: 1,
   fallback: ["eyes", "white_check_mark", "tada"]
+  ,
+  emojis: [
+    { name: "eyes", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" },
+    { name: "white_check_mark", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" },
+    { name: "tada", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" },
+    { name: "pray", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" },
+    { name: "bulb", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" },
+    { name: "rocket", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" }
+  ]
 };
 
 describe("parseEmojiConfig", () => {
@@ -23,14 +24,23 @@ describe("parseEmojiConfig", () => {
     expect(() =>
       parseEmojiConfig({
         ...valid,
-        candidates: [...valid.candidates, { name: "eyes", kind: "standard", description: "a" }]
+        emojis: [...valid.emojis, { name: "eyes", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" }]
       })
     ).toThrow(/duplicate/u);
     expect(() =>
       parseEmojiConfig({
         ...valid,
-        candidates: valid.candidates.map((candidate) => (candidate.name === "tada" ? { ...candidate, kind: "custom" } : candidate))
+        emojis: valid.emojis.map((candidate) => (candidate.name === "tada" ? { ...candidate, kind: "custom" } : candidate))
       })
     ).toThrow(/standard/u);
+  });
+
+  it("rejects configs with too few enabled candidates", () => {
+    expect(() =>
+      parseEmojiConfig({
+        ...valid,
+        emojis: valid.emojis.map((candidate, index) => (index < 2 ? { ...candidate, enabled: false } : candidate))
+      })
+    ).toThrow(/at least 6/u);
   });
 });

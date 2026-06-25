@@ -5,15 +5,19 @@ import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { createWorkerApp } from "../../src/worker/app.js";
 import { MemoryProcessRepository } from "../fixtures/memory-process-repository.js";
 
+function emoji(name: string, kind: "standard" | "custom" = "standard") {
+  return { name, kind, description: "a", useWhen: "when", avoidWhen: "avoid" };
+}
+
 const emojiConfig: EmojiConfig = {
   candidates: [
-    { name: "eyes", kind: "standard", description: "a" },
-    { name: "white_check_mark", kind: "standard", description: "a" },
-    { name: "tada", kind: "standard", description: "a" },
-    { name: "pray", kind: "standard", description: "a" },
-    { name: "bulb", kind: "standard", description: "a" },
-    { name: "rocket", kind: "standard", description: "a" },
-    { name: "shipit", kind: "custom", description: "a" }
+    emoji("eyes"),
+    emoji("white_check_mark"),
+    emoji("tada"),
+    emoji("pray"),
+    emoji("bulb"),
+    emoji("rocket"),
+    emoji("shipit", "custom")
   ],
   fallback: ["eyes", "white_check_mark", "tada"]
 };
@@ -26,6 +30,13 @@ const env = {
   SLACK_BOT_TOKEN: "xoxb-test",
   GEMINI_API_KEY: "gemini-test",
   GEMINI_MODEL: "gemini-2.5-flash-lite",
+  GEMINI_TIMEOUT_MS: 8000,
+  SLACK_TIMEOUT_MS: 5000,
+  GEMINI_UNPAID_TERMS_ACKNOWLEDGED: true,
+  EMOJI_CONFIG_PATH: "config/emoji.default.yaml",
+  CUSTOM_EMOJI_CACHE_TTL_SECONDS: 600,
+  FIRESTORE_DATABASE_ID: "(default)",
+  PROCESS_RECORD_TTL_DAYS: 7,
   DRY_RUN: false,
   LEASE_SECONDS: 1,
   targetChannelSet: new Set(["C1"])

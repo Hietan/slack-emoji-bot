@@ -7,7 +7,7 @@ const logger = createLogger("receiver");
 const env = loadReceiverEnv();
 const taskQueue = new CloudTasksQueue({
   projectId: env.GCP_PROJECT_ID,
-  location: env.GCP_LOCATION,
+  location: env.GCP_REGION,
   queueId: env.CLOUD_TASKS_QUEUE_ID,
   workerUrl: env.WORKER_URL,
   serviceAccountEmail: env.TASK_INVOKER_SERVICE_ACCOUNT_EMAIL

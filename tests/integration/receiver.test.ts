@@ -13,7 +13,7 @@ const env: ReceiverEnv = {
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1",
   GCP_PROJECT_ID: "project",
-  GCP_LOCATION: "asia-northeast1",
+  GCP_REGION: "asia-northeast1",
   CLOUD_TASKS_QUEUE_ID: "emoji-reaction-jobs",
   WORKER_URL: "https://worker.example.com",
   TASK_INVOKER_SERVICE_ACCOUNT_EMAIL: "task@example.iam.gserviceaccount.com",

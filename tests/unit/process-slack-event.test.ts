@@ -4,14 +4,18 @@ import type { EmojiConfig } from "../../src/domain/emoji.js";
 import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { MemoryProcessRepository } from "../fixtures/memory-process-repository.js";
 
+function emoji(name: string, kind: "standard" | "custom" = "standard") {
+  return { name, kind, description: "a", useWhen: "when", avoidWhen: "avoid" };
+}
+
 const emojiConfig: EmojiConfig = {
   candidates: [
-    { name: "eyes", kind: "standard", description: "a" },
-    { name: "white_check_mark", kind: "standard", description: "a" },
-    { name: "tada", kind: "standard", description: "a" },
-    { name: "pray", kind: "standard", description: "a" },
-    { name: "bulb", kind: "standard", description: "a" },
-    { name: "rocket", kind: "standard", description: "a" }
+    emoji("eyes"),
+    emoji("white_check_mark"),
+    emoji("tada"),
+    emoji("pray"),
+    emoji("bulb"),
+    emoji("rocket")
   ],
   fallback: ["eyes", "white_check_mark", "tada"]
 };
@@ -90,5 +94,29 @@ describe("processSlackEvent", () => {
     });
     expect(reactionClient.addReaction).not.toHaveBeenCalled();
     expect(repository.records.get("Ev3")?.dryRun).toBe(true);
+  });
+
+  it("replaces invalid_name once with an unused standard fallback", async () => {
+    const repository = new MemoryProcessRepository();
+    const calls: string[] = [];
+    const reactionClient = {
+      addReaction: vi.fn(({ emojiName }: { emojiName: string }) => {
+        calls.push(emojiName);
+        return Promise.resolve(emojiName === "rocket" ? { ok: false as const, retryable: false, code: "invalid_name" as const } : { ok: true as const });
+      })
+    };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload: { ...payload, eventId: "Ev4" },
+        repository,
+        emojiSelector: { select: () => Promise.resolve({ names: ["rocket", "eyes", "white_check_mark"], source: "gemini" }) },
+        reactionClient
+      })
+    ).resolves.toEqual({ kind: "completed" });
+
+    expect(calls).toEqual(["rocket", "tada", "eyes", "white_check_mark"]);
+    expect(repository.records.get("Ev4")?.selectedEmojiNames).toEqual(["tada", "eyes", "white_check_mark"]);
   });
 });

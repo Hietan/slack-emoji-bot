@@ -30,6 +30,12 @@ variable "dry_run" {
   default     = true
 }
 
+variable "gemini_unpaid_terms_acknowledged" {
+  type        = bool
+  description = "Required acknowledgement before enabling Gemini in production."
+  default     = false
+}
+
 variable "image" {
   type        = string
   description = "Container image URI."

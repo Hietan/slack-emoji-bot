@@ -7,19 +7,28 @@ import { emojiNameSchema, REACTION_COUNT } from "../domain/emoji.js";
 const candidateSchema = z.object({
   name: emojiNameSchema,
   kind: z.enum(["standard", "custom"]),
+  enabled: z.boolean().default(true),
   description: z.string().min(1).max(160)
+    .or(z.string().min(1).max(240)),
+  use_when: z.string().min(1).max(240),
+  avoid_when: z.string().min(1).max(240)
 });
 
 const emojiConfigSchema = z.object({
-  schemaVersion: z.literal(1),
-  candidates: z.array(candidateSchema).min(6),
+  version: z.literal(1),
   fallback: z.array(emojiNameSchema).length(REACTION_COUNT)
+    .or(z.array(emojiNameSchema).min(1)),
+  emojis: z.array(candidateSchema).min(6)
 });
 
 export function parseEmojiConfig(input: unknown): EmojiConfig {
   const parsed = emojiConfigSchema.parse(input);
   const names = new Set<string>();
-  for (const candidate of parsed.candidates) {
+  const enabledCandidates = parsed.emojis.filter((candidate) => candidate.enabled);
+  if (enabledCandidates.length < 6) {
+    throw new Error("enabled emoji candidates must be at least 6");
+  }
+  for (const candidate of enabledCandidates) {
     if (names.has(candidate.name)) {
       throw new Error(`duplicate emoji candidate: ${candidate.name}`);
     }
@@ -30,7 +39,7 @@ export function parseEmojiConfig(input: unknown): EmojiConfig {
     throw new Error("fallback emoji must be distinct");
   }
   for (const fallbackName of parsed.fallback) {
-    const candidate = parsed.candidates.find((item) => item.name === fallbackName);
+    const candidate = enabledCandidates.find((item) => item.name === fallbackName);
     if (candidate === undefined) {
       throw new Error(`fallback emoji is not a candidate: ${fallbackName}`);
     }
@@ -39,7 +48,13 @@ export function parseEmojiConfig(input: unknown): EmojiConfig {
     }
   }
   return {
-    candidates: parsed.candidates,
+    candidates: enabledCandidates.map((candidate) => ({
+      name: candidate.name,
+      kind: candidate.kind,
+      description: candidate.description,
+      useWhen: candidate.use_when,
+      avoidWhen: candidate.avoid_when
+    })),
     fallback: parsed.fallback
   };
 }

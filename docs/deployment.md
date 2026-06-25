@@ -6,6 +6,7 @@
 4. Record Slack App ID, Team ID, and Signing Secret.
 5. Install the bot to the workspace and record the Bot Token.
 6. Create a Gemini API key.
+6. Review Gemini unpaid service terms and decide whether `GEMINI_UNPAID_TERMS_ACKNOWLEDGED=true` is acceptable for your workspace.
 7. Run the Terraform bootstrap instructions in `infra/bootstrap`.
 8. Add the three secret values to Secret Manager.
 9. Apply Terraform in `infra/terraform`.

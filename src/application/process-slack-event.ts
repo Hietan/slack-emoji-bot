@@ -72,15 +72,43 @@ export async function processSlackEvent(input: {
     return { kind: "completed" };
   }
 
-  for (const emojiName of selectedEmojiNames) {
+  let currentSelection = selectedEmojiNames;
+  const replacedInvalidNames = new Set<string>();
+  for (let index = 0; index < currentSelection.length; index += 1) {
+    const emojiName = currentSelection[index];
+    if (emojiName === undefined) {
+      continue;
+    }
     if (record.completedEmojiNames.includes(emojiName)) {
       continue;
     }
-    const result = await input.reactionClient.addReaction({
+    let result = await input.reactionClient.addReaction({
       channelId: payload.channelId,
       messageTs: payload.messageTs,
       emojiName
     });
+    if (!result.ok && result.code === "invalid_name" && !replacedInvalidNames.has(emojiName)) {
+      const replacement = findStandardFallbackReplacement(input.emojiConfig, currentSelection, record.completedEmojiNames);
+      if (replacement !== null) {
+        replacedInvalidNames.add(emojiName);
+        currentSelection = replaceAt(currentSelection, index, replacement);
+        record = await input.repository.persistSelection(
+          payload.eventId,
+          { names: currentSelection, source: record.selectionSource ?? "fallback" },
+          input.clock.now()
+        );
+        const retryResult = await input.reactionClient.addReaction({
+          channelId: payload.channelId,
+          messageTs: payload.messageTs,
+          emojiName: replacement
+        });
+        if (retryResult.ok) {
+          record = await input.repository.markReactionComplete(payload.eventId, replacement, input.clock.now());
+          continue;
+        }
+        result = retryResult;
+      }
+    }
     if (!result.ok) {
       if (result.retryable) {
         return result.retryAfterSeconds === undefined
@@ -97,13 +125,42 @@ export async function processSlackEvent(input: {
   return { kind: "completed" };
 }
 
+function replaceAt(names: [string, string, string], index: number, replacement: string): [string, string, string] {
+  const updated: [string, string, string] = [...names];
+  updated[index] = replacement;
+  return updated;
+}
+
+function findStandardFallbackReplacement(
+  emojiConfig: EmojiConfig,
+  selectedNames: readonly string[],
+  completedNames: readonly string[]
+): string | null {
+  const unavailable = new Set([...selectedNames, ...completedNames]);
+  for (const name of emojiConfig.fallback) {
+    const candidate = emojiConfig.candidates.find((item) => item.name === name);
+    if (candidate?.kind === "standard" && !unavailable.has(name)) {
+      return name;
+    }
+  }
+  for (const candidate of emojiConfig.candidates) {
+    if (candidate.kind === "standard" && !unavailable.has(candidate.name)) {
+      return candidate.name;
+    }
+  }
+  return null;
+}
+
 async function selectEmoji(input: {
   analysisText: string;
   emojiConfig: EmojiConfig;
   emojiCatalog: EmojiCatalog;
   emojiSelector: EmojiSelector;
 }): Promise<EmojiSelection> {
-  const customNames = await input.emojiCatalog.listCustomEmojiNames().catch(() => new Set<string>());
+  const hasCustomCandidates = input.emojiConfig.candidates.some((candidate) => candidate.kind === "custom");
+  const customNames = hasCustomCandidates
+    ? await input.emojiCatalog.listCustomEmojiNames().catch(() => new Set<string>())
+    : new Set<string>();
   const candidates = input.emojiConfig.candidates.filter(
     (candidate) => candidate.kind === "standard" || customNames.has(candidate.name)
   );

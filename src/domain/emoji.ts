@@ -14,6 +14,8 @@ export type EmojiCandidate = {
   name: string;
   kind: EmojiKind;
   description: string;
+  useWhen: string;
+  avoidWhen: string;
 };
 
 export type EmojiConfig = {
@@ -54,10 +56,21 @@ export function validateSelection(names: string[], allowlist: ReadonlySet<string
 }
 
 export function selectFallback(config: EmojiConfig, allowlist: ReadonlySet<string>): EmojiSelection {
-  const selected = validateSelection(
-    config.fallback.filter((name) => allowlist.has(name)).slice(0, REACTION_COUNT),
-    allowlist
-  );
+  const fallbackNames = new Set<string>();
+  for (const name of config.fallback) {
+    if (allowlist.has(name)) {
+      fallbackNames.add(name);
+    }
+  }
+  for (const candidate of config.candidates) {
+    if (candidate.kind === "standard" && allowlist.has(candidate.name)) {
+      fallbackNames.add(candidate.name);
+    }
+    if (fallbackNames.size === REACTION_COUNT) {
+      break;
+    }
+  }
+  const selected = validateSelection(Array.from(fallbackNames).slice(0, REACTION_COUNT), allowlist);
   if (selected === null) {
     throw new Error("fallback_candidates_unavailable");
   }

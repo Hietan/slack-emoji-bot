@@ -119,7 +119,7 @@ resource "google_cloud_run_v2_service" "receiver" {
         value = var.project_id
       }
       env {
-        name  = "GCP_LOCATION"
+        name  = "GCP_REGION"
         value = var.region
       }
       env {
@@ -191,6 +191,14 @@ resource "google_cloud_run_v2_service" "worker" {
       env {
         name  = "DRY_RUN"
         value = tostring(var.dry_run)
+      }
+      env {
+        name  = "GEMINI_UNPAID_TERMS_ACKNOWLEDGED"
+        value = tostring(var.gemini_unpaid_terms_acknowledged)
+      }
+      env {
+        name  = "FIRESTORE_DATABASE_ID"
+        value = google_firestore_database.database.name
       }
       env {
         name = "SLACK_BOT_TOKEN"

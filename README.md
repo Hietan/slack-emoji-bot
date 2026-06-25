@@ -31,7 +31,7 @@ It does not handle threads, bot posts, edited/deleted messages, private channels
 
 Slack message text is normalized, masked, and truncated before it is sent to Cloud Tasks and Gemini. This masking is limited and does not guarantee complete removal of confidential or personal information. Do not use this bot in channels where secrets, unpublished research, credentials, or personal data may be posted.
 
-The app must not persist message text, Gemini input, raw Gemini output, Slack tokens, signatures, or authorization headers.
+The app must not persist message text, Gemini input, raw Gemini output, Slack tokens, signatures, or authorization headers. In production, set `GEMINI_UNPAID_TERMS_ACKNOWLEDGED=true` only after accepting that unpaid Gemini API terms do not make sensitive channel content safe to send.
 
 ## Prerequisites
 

@@ -1,33 +1,121 @@
-schemaVersion: 1
-candidates:
-  - name: eyes
-    kind: standard
-    description: Signals attention or interest.
-  - name: white_check_mark
-    kind: standard
-    description: Signals completion or agreement.
-  - name: tada
-    kind: standard
-    description: Celebrates a win or milestone.
-  - name: pray
-    kind: standard
-    description: Thanks someone or acknowledges help.
-  - name: bulb
-    kind: standard
-    description: Highlights an idea or insight.
-  - name: rocket
-    kind: standard
-    description: Signals momentum or launch.
-  - name: memo
-    kind: standard
-    description: Notes useful information.
-  - name: heart
-    kind: standard
-    description: Shows appreciation.
-  - name: naist
-    kind: custom
-    description: Workspace-specific NAIST reaction if registered.
+version: 1
 fallback:
   - eyes
-  - white_check_mark
-  - tada
+  - thinking_face
+  - memo
+
+emojis:
+  - name: eyes
+    kind: standard
+    enabled: true
+    description: Neutral acknowledgement or attention.
+    use_when: Announcements, sharing, review requests, or situational awareness.
+    avoid_when: Personal content where attention may feel intrusive.
+  - name: white_check_mark
+    kind: standard
+    enabled: true
+    description: Completion, resolution, agreement, or confirmation.
+    use_when: Completed tasks, resolved issues, or clear approvals.
+    avoid_when: Unconfirmed proposals, questions, or ongoing problems.
+  - name: thumbsup
+    kind: standard
+    enabled: true
+    description: Positive acknowledgement or agreement.
+    use_when: Agreement with a proposal or lightweight positive feedback.
+    avoid_when: Serious incidents, failures, or distressing updates.
+  - name: clap
+    kind: standard
+    enabled: true
+    description: Recognition for effort or achievement.
+    use_when: Achievements, good presentations, or useful contributions.
+    avoid_when: Serious problems or unresolved failures.
+  - name: tada
+    kind: standard
+    enabled: true
+    description: Celebration of clear success.
+    use_when: Releases, acceptance, awards, or completed milestones.
+    avoid_when: Ambiguous updates, incidents, failures, or warnings.
+  - name: sparkles
+    kind: standard
+    enabled: true
+    description: Newness, polish, or improvement.
+    use_when: New features, improvements, or creative results.
+    avoid_when: Incidents, accidents, or negative reports.
+  - name: bulb
+    kind: standard
+    enabled: true
+    description: Ideas, discoveries, or suggestions.
+    use_when: New proposals, research insights, or improvement ideas.
+    avoid_when: Plain completion reports or clearly sad news.
+  - name: thinking_face
+    kind: standard
+    enabled: true
+    description: Reflection, uncertainty, or neutral consideration.
+    use_when: Discussion, questions, decisions under consideration, or ambiguous content.
+    avoid_when: Clearly celebratory updates.
+  - name: question
+    kind: standard
+    enabled: true
+    description: Question or missing information.
+    use_when: Questions, specification checks, or unclear points.
+    avoid_when: Completed reports with no open question.
+  - name: memo
+    kind: standard
+    enabled: true
+    description: Notes, documentation, or information sharing.
+    use_when: Documents, meeting notes, procedures, or reference material.
+    avoid_when: Strong celebration is the only intended tone.
+  - name: speech_balloon
+    kind: standard
+    enabled: true
+    description: Conversation, discussion, or feedback.
+    use_when: Feedback requests, review discussions, or debate.
+    avoid_when: One-way completion reports.
+  - name: mag
+    kind: standard
+    enabled: true
+    description: Investigation, analysis, or review.
+    use_when: Cause investigation, code review, validation, or research analysis.
+    avoid_when: Simple celebration.
+  - name: warning
+    kind: standard
+    enabled: true
+    description: Warning, risk, incident, or important concern.
+    use_when: Incidents, security concerns, deadline risks, or cautionary notes.
+    avoid_when: Minor positive updates.
+  - name: information_source
+    kind: standard
+    enabled: true
+    description: Reference information or supplemental notice.
+    use_when: Procedure changes, reference links, explanatory context, or announcements.
+    avoid_when: A strong emotional reaction is more appropriate.
+  - name: rocket
+    kind: standard
+    enabled: true
+    description: Progress, launch, or momentum.
+    use_when: Deployments, releases, project starts, or performance improvements.
+    avoid_when: Incidents, delays, or failures.
+  - name: heart
+    kind: standard
+    enabled: true
+    description: Appreciation, empathy, or support.
+    use_when: Thanks, support, encouragement, or appropriate empathy.
+    avoid_when: Formal technical notices only.
+  - name: muscle
+    kind: standard
+    enabled: true
+    description: Effort, persistence, or challenge.
+    use_when: Difficult work, sustained effort, or improvement attempts.
+    avoid_when: It could minimize a serious failure.
+  - name: pray
+    kind: standard
+    enabled: true
+    description: Thanks, request, or care.
+    use_when: Polite requests, gratitude, or asking for support.
+    avoid_when: Religious implications may be inappropriate.
+  - name: nice_research
+    kind: custom
+    enabled: false
+    description: Workspace-specific recognition for useful research.
+    use_when: Paper acceptance, research results, or interesting experiments.
+    avoid_when: Unverified claims or negative results that should not be minimized.
