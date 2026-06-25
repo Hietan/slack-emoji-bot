@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
 import type { EmojiSelector } from "../application/ports/emoji-selector.js";
 import type { EmojiSelection } from "../domain/emoji.js";
 import { validateSelection } from "../domain/emoji.js";
@@ -12,6 +13,12 @@ const SYSTEM_INSTRUCTION = [
   "Do not celebrate, mock, or trivialize reports of harm, illness, conflict, discrimination, security incidents, outages, failures, or personal distress.",
   "Return only the requested structured JSON. Do not add explanations."
 ].join("\n");
+
+const geminiSelectionSchema = z
+  .object({
+    emojis: z.array(z.string()).length(3)
+  })
+  .strict();
 
 export type GeminiEmojiSelectorOptions = {
   apiKey: string;
@@ -77,7 +84,7 @@ export class GeminiEmojiSelector implements EmojiSelector {
       if (text === undefined) {
         throw new Error("gemini_empty_response");
       }
-      const parsed = JSON.parse(text) as unknown;
+      const parsed = parseGeminiJson(text);
       const names = extractEmojiNames(parsed);
       const selected = validateSelection(names, new Set(allowlist));
       if (selected === null) {
@@ -90,16 +97,18 @@ export class GeminiEmojiSelector implements EmojiSelector {
   }
 }
 
+function parseGeminiJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error("gemini_invalid_json");
+  }
+}
+
 function extractEmojiNames(value: unknown): string[] {
-  if (typeof value !== "object" || value === null || !("emojis" in value)) {
+  const parsed = geminiSelectionSchema.safeParse(value);
+  if (!parsed.success) {
     throw new Error("gemini_invalid_json");
   }
-  const names = value.emojis;
-  if (!Array.isArray(names) || !names.every((name) => typeof name === "string")) {
-    throw new Error("gemini_invalid_json");
-  }
-  if (Object.keys(value).length !== 1) {
-    throw new Error("gemini_extra_keys");
-  }
-  return names;
+  return parsed.data.emojis;
 }

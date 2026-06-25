@@ -44,10 +44,18 @@ describe("GeminiEmojiSelector", () => {
     });
   });
 
-  it("rejects extra keys and invalid allowlist output", async () => {
+  it.each([
+    { name: "two emojis", text: "{\"emojis\":[\"eyes\",\"thinking_face\"]}" },
+    { name: "four emojis", text: "{\"emojis\":[\"eyes\",\"thinking_face\",\"memo\",\"eyes\"]}" },
+    { name: "duplicate emojis", text: "{\"emojis\":[\"eyes\",\"eyes\",\"memo\"]}" },
+    { name: "allowlist violation", text: "{\"emojis\":[\"eyes\",\"thinking_face\",\"nope\"]}" },
+    { name: "extra keys", text: "{\"emojis\":[\"eyes\",\"thinking_face\",\"memo\"],\"note\":\"bad\"}" },
+    { name: "invalid JSON", text: "not-json" },
+    { name: "missing response text", text: undefined }
+  ])("rejects Gemini output with $name", async ({ text }) => {
     const generateContent = vi.fn((request: GenerateContentParameters) => {
       expect(request.model).toBe("gemini-2.5-flash-lite");
-      return Promise.resolve({ text: "{\"emojis\":[\"eyes\",\"eyes\",\"nope\"],\"note\":\"bad\"}" } as unknown as GenerateContentResponse);
+      return Promise.resolve({ text } as unknown as GenerateContentResponse);
     });
     const selector = new GeminiEmojiSelector({
       apiKey: "key",
