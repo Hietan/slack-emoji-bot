@@ -111,6 +111,7 @@ describe("contracts", () => {
       "Semantic Versioning",
       "vMAJOR.MINOR.PATCH",
       "pnpm test --coverage",
+      "pnpm scan:sensitive",
       "terraform -chdir=infra/terraform validate",
       "docker build .",
       "DRY_RUN=true",
@@ -122,6 +123,16 @@ describe("contracts", () => {
     ]) {
       expect(release).toContain(phrase);
     }
+  });
+
+  it("CI and deploy workflows run the sensitive content scanner", () => {
+    const packageJson = readFileSync("package.json", "utf8");
+    const ciWorkflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(packageJson).toContain('"scan:sensitive": "tsx scripts/scan-sensitive-content.ts"');
+    expect(ciWorkflow).toContain("pnpm scan:sensitive");
+    expect(deployWorkflow).toContain("pnpm scan:sensitive");
   });
 
   it("deployment uses Workload Identity Federation without long-lived JSON keys", () => {

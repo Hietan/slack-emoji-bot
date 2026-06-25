@@ -11,6 +11,7 @@ pnpm test
 pnpm test:integration
 pnpm build
 pnpm validate:config
+pnpm scan:sensitive
 ```
 
 Conventional Commits are recommended. Specification changes require an issue, an update to `SPECIFICATION.md`, and an ADR in `docs/adr/`.

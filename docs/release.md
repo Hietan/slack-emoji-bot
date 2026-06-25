@@ -12,6 +12,7 @@ This project uses Semantic Versioning and `vMAJOR.MINOR.PATCH` Git tags.
    pnpm test:integration
    pnpm build
    pnpm validate:config
+   pnpm scan:sensitive
    terraform -chdir=infra/terraform fmt -check
    terraform -chdir=infra/terraform init -backend=false
    terraform -chdir=infra/terraform validate

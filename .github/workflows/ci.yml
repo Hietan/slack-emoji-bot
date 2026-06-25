@@ -22,6 +22,7 @@ jobs:
       - run: pnpm test:integration
       - run: pnpm build
       - run: pnpm validate:config
+      - run: pnpm scan:sensitive
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
       - run: terraform -chdir=infra/terraform fmt -check
       - run: terraform -chdir=infra/terraform init -backend=false
