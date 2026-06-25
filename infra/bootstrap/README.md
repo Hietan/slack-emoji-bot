@@ -92,4 +92,4 @@ GCP_WORKLOAD_IDENTITY_PROVIDER=projects/PROJECT_NUMBER/locations/global/workload
 GCP_DEPLOYER_SERVICE_ACCOUNT=slack-emoji-bot-github-deployer@PROJECT_ID.iam.gserviceaccount.com
 ```
 
-After the first successful Terraform apply, add the three Secret Manager secret versions described in `docs/deployment.md`.
+Before the first full deploy, run the targeted Terraform apply from `docs/deployment.md` to create the Secret Manager containers, then add the three secret versions. Do not wait until after Cloud Run creation, because the services reference the `latest` secret versions at deploy time.

@@ -181,10 +181,13 @@ describe("contracts", () => {
   it("deployment creates the Artifact Registry repository before pushing images", () => {
     const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
     const repoApplyIndex = deployWorkflow.indexOf("-target=google_artifact_registry_repository.repo");
+    const secretApplyIndex = deployWorkflow.indexOf("-target=google_secret_manager_secret.secrets");
     const dockerPushIndex = deployWorkflow.indexOf("docker push");
     const fullApplyIndex = deployWorkflow.indexOf("terraform -chdir=infra/terraform apply -auto-approve -var");
     expect(repoApplyIndex).toBeGreaterThan(-1);
+    expect(secretApplyIndex).toBeGreaterThan(-1);
     expect(dockerPushIndex).toBeGreaterThan(repoApplyIndex);
+    expect(dockerPushIndex).toBeGreaterThan(secretApplyIndex);
     expect(fullApplyIndex).toBeGreaterThan(dockerPushIndex);
   });
 
@@ -218,6 +221,9 @@ describe("contracts", () => {
       "separate Gemini API key project",
       "Slack App ID, Team ID, and Signing Secret",
       "Bot Token",
+      "before the first full deploy",
+      "-target=google_secret_manager_secret.secrets",
+      "before creating Cloud Run services",
       "Secret Manager versions",
       "slack-emoji-bot-slack-signing-secret",
       "slack-emoji-bot-slack-bot-token",
@@ -228,6 +234,10 @@ describe("contracts", () => {
     ]) {
       expect(deployment).toContain(phrase);
     }
+
+    const bootstrap = readFileSync("infra/bootstrap/README.md", "utf8");
+    expect(bootstrap).toContain("Before the first full deploy");
+    expect(bootstrap).toContain("latest");
   });
 
   it("Terraform declares required low-cost serverless infrastructure", () => {
