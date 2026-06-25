@@ -10,11 +10,10 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
-          cache: pnpm
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -23,7 +22,7 @@ jobs:
       - run: pnpm test:integration
       - run: pnpm build
       - run: pnpm validate:config
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
       - run: terraform -chdir=infra/terraform fmt -check
       - run: terraform -chdir=infra/terraform init -backend=false
       - run: terraform -chdir=infra/terraform validate

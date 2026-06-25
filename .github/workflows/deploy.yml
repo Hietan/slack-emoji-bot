@@ -3,9 +3,26 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      image:
-        description: Full Artifact Registry image URI to deploy
+      project_id:
+        description: GCP project ID
         required: true
+      region:
+        description: GCP region
+        required: true
+        default: asia-northeast1
+      slack_team_id:
+        description: Slack team ID
+        required: true
+      slack_app_id:
+        description: Slack app ID
+        required: true
+      target_channel_ids:
+        description: Comma-separated Slack public channel IDs
+        required: true
+      dry_run:
+        description: Run without calling Slack reactions.add
+        required: true
+        default: "true"
 
 jobs:
   deploy:
@@ -14,11 +31,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
-          cache: pnpm
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -26,12 +42,17 @@ jobs:
       - run: pnpm test
       - run: pnpm test:integration
       - run: pnpm build
-      - uses: google-github-actions/auth@v2
+      - run: pnpm validate:config
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-      - uses: hashicorp/setup-terraform@v3
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f
+      - run: gcloud auth configure-docker "${{ inputs.region }}-docker.pkg.dev" --quiet
+      - run: docker build -t "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}" .
+      - run: docker push "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
       - run: terraform -chdir=infra/terraform init
-      - run: terraform -chdir=infra/terraform plan -var "image=${{ inputs.image }}"
-      - run: terraform -chdir=infra/terraform apply -auto-approve -var "image=${{ inputs.image }}"
+      - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: echo "Receiver URL=$(terraform -chdir=infra/terraform output -raw receiver_url)" >> "$GITHUB_STEP_SUMMARY"

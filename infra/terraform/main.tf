@@ -25,6 +25,14 @@ resource "google_artifact_registry_repository" "repo" {
   depends_on    = [google_project_service.required]
 }
 
+resource "google_firestore_database" "database" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+  depends_on  = [google_project_service.required]
+}
+
 resource "google_secret_manager_secret" "secrets" {
   for_each = toset([
     "${local.service_prefix}-slack-signing-secret",
@@ -76,9 +84,11 @@ resource "google_cloud_tasks_queue" "queue" {
 resource "google_cloud_run_v2_service" "receiver" {
   name     = "${local.service_prefix}-receiver"
   location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.receiver.email
+    max_instance_request_concurrency = 80
     scaling {
       min_instance_count = 0
       max_instance_count = 2
@@ -114,7 +124,7 @@ resource "google_cloud_run_v2_service" "receiver" {
       }
       env {
         name  = "CLOUD_TASKS_QUEUE_ID"
-        value = google_cloud_tasks_queue.queue.name
+        value = local.queue_id
       }
       env {
         name  = "WORKER_URL"
@@ -137,15 +147,22 @@ resource "google_cloud_run_v2_service" "receiver" {
     timeout = "10s"
   }
 
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
+  }
+
   depends_on = [google_project_service.required]
 }
 
 resource "google_cloud_run_v2_service" "worker" {
   name     = "${local.service_prefix}-worker"
   location = var.region
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
     service_account = google_service_account.worker.email
+    max_instance_request_concurrency = 4
     scaling {
       min_instance_count = 0
       max_instance_count = 2
@@ -197,6 +214,11 @@ resource "google_cloud_run_v2_service" "worker" {
     timeout = "120s"
   }
 
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
+  }
+
   depends_on = [google_project_service.required]
 }
 
@@ -228,8 +250,26 @@ resource "google_project_iam_member" "worker_firestore" {
   member  = "serviceAccount:${google_service_account.worker.email}"
 }
 
-resource "google_project_iam_member" "receiver_task_sa_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.receiver.email}"
+resource "google_service_account_iam_member" "receiver_task_sa_user" {
+  service_account_id = google_service_account.task_invoker.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.receiver.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "receiver_signing_secret_access" {
+  secret_id = google_secret_manager_secret.secrets["${local.service_prefix}-slack-signing-secret"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.receiver.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "worker_slack_token_access" {
+  secret_id = google_secret_manager_secret.secrets["${local.service_prefix}-slack-bot-token"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.worker.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "worker_gemini_key_access" {
+  secret_id = google_secret_manager_secret.secrets["${local.service_prefix}-gemini-api-key"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.worker.email}"
 }
