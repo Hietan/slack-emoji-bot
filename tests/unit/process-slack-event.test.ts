@@ -364,6 +364,28 @@ describe("processSlackEvent", () => {
     expect(repository.records.get("Ev3")?.dryRun).toBe(true);
   });
 
+  it("records already_reacted as completed reaction progress", async () => {
+    const repository = new MemoryProcessRepository();
+    const reactionClient = {
+      addReaction: vi.fn(({ emojiName }: { emojiName: string }) =>
+        Promise.resolve(emojiName === "eyes" ? { ok: true as const, alreadyPresent: true } : { ok: true as const })
+      )
+    };
+
+    await expect(
+      processSlackEvent({
+        ...base,
+        payload: { ...payload, eventId: "EvAlreadyReacted" },
+        repository,
+        emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
+        reactionClient
+      })
+    ).resolves.toEqual({ kind: "completed" });
+
+    expect(repository.records.get("EvAlreadyReacted")?.completedEmojis).toEqual(["eyes", "white_check_mark", "tada"]);
+    expect(repository.records.get("EvAlreadyReacted")?.status).toBe("completed");
+  });
+
   it("replaces invalid_name once with an unused standard fallback", async () => {
     const repository = new MemoryProcessRepository();
     const calls: string[] = [];
