@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { parseTargetChannelSet } from "./target-channels.js";
 
 const receiverEnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]),
   PORT: z.coerce.number().int().positive().default(8080),
   SLACK_SIGNING_SECRET: z.string().min(1),
   SLACK_TEAM_ID: z.string().min(1),
@@ -20,9 +22,6 @@ export type ReceiverEnv = z.infer<typeof receiverEnvSchema> & {
 
 export function loadReceiverEnv(source: NodeJS.ProcessEnv = process.env): ReceiverEnv {
   const parsed = receiverEnvSchema.parse(source);
-  const targetChannelSet = new Set(parsed.TARGET_CHANNEL_IDS.split(",").map((value) => value.trim()).filter(Boolean));
-  if (targetChannelSet.size === 0) {
-    throw new Error("TARGET_CHANNEL_IDS must contain at least one channel ID");
-  }
+  const targetChannelSet = parseTargetChannelSet(parsed.TARGET_CHANNEL_IDS);
   return { ...parsed, targetChannelSet };
 }

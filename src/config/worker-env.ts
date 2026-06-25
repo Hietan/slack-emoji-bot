@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { parseTargetChannelSet } from "./target-channels.js";
 
 const workerEnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]),
   PORT: z.coerce.number().int().positive().default(8080),
   SLACK_TEAM_ID: z.string().min(1),
   SLACK_APP_ID: z.string().min(1),
@@ -31,12 +33,9 @@ export type WorkerEnv = z.infer<typeof workerEnvSchema> & {
 
 export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEnv {
   const parsed = workerEnvSchema.parse(source);
-  if (source.NODE_ENV === "production" && !parsed.GEMINI_UNPAID_TERMS_ACKNOWLEDGED) {
+  if (parsed.NODE_ENV === "production" && !parsed.GEMINI_UNPAID_TERMS_ACKNOWLEDGED) {
     throw new Error("GEMINI_UNPAID_TERMS_ACKNOWLEDGED must be true in production");
   }
-  const targetChannelSet = new Set(parsed.TARGET_CHANNEL_IDS.split(",").map((value) => value.trim()).filter(Boolean));
-  if (targetChannelSet.size === 0) {
-    throw new Error("TARGET_CHANNEL_IDS must contain at least one channel ID");
-  }
+  const targetChannelSet = parseTargetChannelSet(parsed.TARGET_CHANNEL_IDS);
   return { ...parsed, targetChannelSet };
 }

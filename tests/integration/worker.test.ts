@@ -1,5 +1,6 @@
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
+import type { WorkerEnv } from "../../src/config/worker-env.js";
 import type { EmojiConfig } from "../../src/domain/emoji.js";
 import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { createWorkerApp } from "../../src/worker/app.js";
@@ -22,7 +23,8 @@ const emojiConfig: EmojiConfig = {
   fallback: ["eyes", "white_check_mark", "tada"]
 };
 
-const env = {
+const env: WorkerEnv = {
+  NODE_ENV: "test",
   PORT: 8080,
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",

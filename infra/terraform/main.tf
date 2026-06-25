@@ -112,6 +112,10 @@ resource "google_cloud_run_v2_service" "receiver" {
         }
       }
       env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+      env {
         name  = "SLACK_TEAM_ID"
         value = var.slack_team_id
       }
@@ -184,6 +188,10 @@ resource "google_cloud_run_v2_service" "worker" {
           cpu    = "1"
           memory = "512Mi"
         }
+      }
+      env {
+        name  = "NODE_ENV"
+        value = "production"
       }
       env {
         name  = "SLACK_TEAM_ID"

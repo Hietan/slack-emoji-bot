@@ -152,6 +152,8 @@ describe("contracts", () => {
       "roles/datastore.user",
       "roles/run.invoker",
       "INGRESS_TRAFFIC_INTERNAL_ONLY",
+      "name  = \"NODE_ENV\"",
+      "value = \"production\"",
       "min_instance_count = 0",
       "max_instance_count = 2"
     ]) {

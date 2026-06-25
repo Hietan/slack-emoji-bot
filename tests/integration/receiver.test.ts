@@ -7,6 +7,7 @@ import type { TaskPayload } from "../../src/domain/task-payload.js";
 import { createReceiverApp } from "../../src/receiver/app.js";
 
 const env: ReceiverEnv = {
+  NODE_ENV: "test",
   PORT: 8080,
   SLACK_SIGNING_SECRET: "secret",
   SLACK_TEAM_ID: "T1",
