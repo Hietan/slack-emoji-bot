@@ -76,7 +76,7 @@ describe("CloudTasksQueue", () => {
     expect(request.task?.httpRequest?.url).toBe("https://worker.example.com/tasks/process");
     expect(request.task?.httpRequest?.oidcToken).toEqual({
       serviceAccountEmail: "task@example.iam.gserviceaccount.com",
-      audience: "https://worker.example.com/"
+      audience: "https://worker.example.com"
     });
     expect(request.task?.dispatchDeadline).toEqual({ seconds: 120 });
 

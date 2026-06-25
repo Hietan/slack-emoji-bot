@@ -24,6 +24,7 @@ export class CloudTasksQueue implements TaskQueue {
   public async enqueue(payload: TaskPayload): Promise<EnqueueTaskResult> {
     const parent = this.#client.queuePath(this.#options.projectId, this.#options.location, this.#options.queueId);
     const name = this.#client.taskPath(this.#options.projectId, this.#options.location, this.#options.queueId, taskIdForEvent(payload.eventId));
+    const workerUrl = this.#options.workerUrl.replace(/\/$/u, "");
     try {
       await this.#client.createTask({
         parent,
@@ -31,12 +32,12 @@ export class CloudTasksQueue implements TaskQueue {
           name,
           httpRequest: {
             httpMethod: "POST",
-            url: `${this.#options.workerUrl.replace(/\/$/u, "")}/tasks/process`,
+            url: `${workerUrl}/tasks/process`,
             headers: { "Content-Type": "application/json" },
             body: Buffer.from(JSON.stringify(payload)).toString("base64"),
             oidcToken: {
               serviceAccountEmail: this.#options.serviceAccountEmail,
-              audience: this.#options.workerUrl
+              audience: workerUrl
             }
           },
           dispatchDeadline: { seconds: 120 }
