@@ -1,0 +1,33 @@
+schemaVersion: 1
+candidates:
+  - name: eyes
+    kind: standard
+    description: Signals attention or interest.
+  - name: white_check_mark
+    kind: standard
+    description: Signals completion or agreement.
+  - name: tada
+    kind: standard
+    description: Celebrates a win or milestone.
+  - name: pray
+    kind: standard
+    description: Thanks someone or acknowledges help.
+  - name: bulb
+    kind: standard
+    description: Highlights an idea or insight.
+  - name: rocket
+    kind: standard
+    description: Signals momentum or launch.
+  - name: memo
+    kind: standard
+    description: Notes useful information.
+  - name: heart
+    kind: standard
+    description: Shows appreciation.
+  - name: naist
+    kind: custom
+    description: Workspace-specific NAIST reaction if registered.
+fallback:
+  - eyes
+  - white_check_mark
+  - tada
