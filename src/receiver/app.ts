@@ -2,12 +2,14 @@ import express from "express";
 import type { RequestHandler } from "express";
 import type { TaskQueue } from "../application/ports/task-queue.js";
 import { createSlackEventsRouter } from "./routes/slack-events.js";
+import type { SlackEventsRateLimitOptions } from "./routes/slack-events.js";
 import type { ReceiverEnv } from "../config/receiver-env.js";
 import type { Clock } from "../shared/clock.js";
 import { systemClock } from "../shared/clock.js";
 
-export function createReceiverApp(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock?: Clock }) {
+export function createReceiverApp(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock?: Clock; slackEventsRateLimit?: SlackEventsRateLimitOptions }) {
   const app = express();
+  app.set("trust proxy", 1);
   const clock = input.clock ?? systemClock;
   const healthHandler: RequestHandler = (_request, response) => {
     response.status(200).json({ ok: true, service: "receiver" });
@@ -18,7 +20,7 @@ export function createReceiverApp(input: { env: ReceiverEnv; taskQueue: TaskQueu
     "/slack/events",
     requireJsonContentType,
     express.raw({ type: "application/json", limit: "256kb" }),
-    createSlackEventsRouter({ env: input.env, taskQueue: input.taskQueue, clock })
+    createSlackEventsRouter({ env: input.env, taskQueue: input.taskQueue, clock, rateLimit: input.slackEventsRateLimit })
   );
   return app;
 }

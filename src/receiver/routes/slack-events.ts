@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import type { TaskQueue } from "../../application/ports/task-queue.js";
 import { receiveSlackEvent } from "../../application/receive-slack-event.js";
 import type { ReceiverEnv } from "../../config/receiver-env.js";
@@ -7,11 +8,25 @@ import type { Clock } from "../../shared/clock.js";
 import { eventIdHash, verifySlackSignature } from "../../shared/crypto.js";
 import { createLogger } from "../../shared/logger.js";
 
-export function createSlackEventsRouter(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock: Clock }) {
+export type SlackEventsRateLimitOptions = {
+  windowMs?: number;
+  limit?: number;
+};
+
+export function createSlackEventsRouter(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock: Clock; rateLimit: SlackEventsRateLimitOptions | undefined }) {
   const router = Router();
   const logger = createLogger("receiver", input.env.LOG_LEVEL);
+  const slackEventsRateLimiter = rateLimit({
+    windowMs: input.rateLimit?.windowMs ?? 60_000,
+    limit: input.rateLimit?.limit ?? 300,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler: (_request, response) => {
+      response.status(429).json({ ok: false });
+    }
+  });
 
-  router.post("/", async (request, response) => {
+  router.post("/", slackEventsRateLimiter, async (request, response) => {
     const rawBody = Buffer.isBuffer(request.body) ? request.body : Buffer.from("");
     const timestamp = headerValue(request.headers["x-slack-request-timestamp"]);
     const signature = headerValue(request.headers["x-slack-signature"]);

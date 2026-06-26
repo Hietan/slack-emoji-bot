@@ -75,6 +75,45 @@ describe("receiver app", () => {
     expect(enqueue).toHaveBeenCalledTimes(1);
   });
 
+  it("rate limits repeated Slack event requests", async () => {
+    const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
+    const taskQueue: TaskQueue = { enqueue };
+    const app = createReceiverApp({ env, taskQueue, clock, slackEventsRateLimit: { windowMs: 60_000, limit: 1 } });
+    const body = {
+      type: "event_callback",
+      team_id: "T1",
+      api_app_id: "A1",
+      event_id: "Ev1",
+      event_time: 1712345678,
+      event: {
+        type: "message",
+        channel_type: "channel",
+        channel: "C1",
+        user: "U1",
+        ts: "1712345678.123456",
+        text: "hello"
+      }
+    };
+    const signed = signedPost(body);
+    const first = await request(app)
+      .post("/slack/events")
+      .set("content-type", "application/json")
+      .set("x-slack-request-timestamp", signed.timestamp)
+      .set("x-slack-signature", signed.signature)
+      .send(signed.raw);
+    const second = await request(app)
+      .post("/slack/events")
+      .set("content-type", "application/json")
+      .set("x-slack-request-timestamp", signed.timestamp)
+      .set("x-slack-signature", signed.signature)
+      .send(signed.raw);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(429);
+    expect(second.body).toEqual({ ok: false });
+    expect(second.headers["retry-after"]).toBeDefined();
+    expect(enqueue).toHaveBeenCalledTimes(1);
+  });
+
   it("returns url verification challenge after signature verification", async () => {
     const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
     const taskQueue: TaskQueue = { enqueue };
