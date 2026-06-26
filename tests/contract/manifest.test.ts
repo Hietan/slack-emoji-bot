@@ -142,6 +142,8 @@ describe("contracts", () => {
     expect(changelog).toContain("Keep a Changelog");
     expect(changelog).toContain("Semantic Versioning");
     expect(changelog).toContain("## [Unreleased]");
+    expect(changelog).toContain("## [0.1.1] - 2026-06-26");
+    expect(changelog).toContain("js/missing-rate-limiting");
     expect(changelog).toContain("## [0.1.0] - 2026-06-26");
 
     const release = readFileSync("docs/release.md", "utf8");

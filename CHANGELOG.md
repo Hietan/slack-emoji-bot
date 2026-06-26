@@ -8,6 +8,12 @@ The format follows Keep a Changelog, and this project uses Semantic Versioning.
 
 No unreleased changes yet.
 
+## [0.1.1] - 2026-06-26
+
+### Security
+
+- Added rate limiting to the Slack Events endpoint to close CodeQL `js/missing-rate-limiting`.
+
 ## [0.1.0] - 2026-06-26
 
 ### Added
@@ -33,5 +39,6 @@ No unreleased changes yet.
 - Redaction and scan checks for message text, API keys, signatures, and raw external responses.
 - Allowlist-constrained model output validation before Slack API calls.
 
-[Unreleased]: https://github.com/Hietan/slack-emoji-bot/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Hietan/slack-emoji-bot/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Hietan/slack-emoji-bot/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Hietan/slack-emoji-bot/releases/tag/v0.1.0
