@@ -100,7 +100,7 @@ resource "google_cloud_run_v2_service" "receiver" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
-    service_account = google_service_account.receiver.email
+    service_account                  = google_service_account.receiver.email
     max_instance_request_concurrency = 80
     scaling {
       min_instance_count = 0
@@ -181,7 +181,7 @@ resource "google_cloud_run_v2_service" "worker" {
   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
-    service_account = google_service_account.worker.email
+    service_account                  = google_service_account.worker.email
     max_instance_request_concurrency = 4
     scaling {
       min_instance_count = 0
