@@ -42,8 +42,8 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 24
       - run: corepack enable
@@ -61,7 +61,7 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
       - run: terraform -chdir=infra/terraform init
       - run: terraform -chdir=infra/terraform apply -auto-approve -target=google_project_service.required -target=google_artifact_registry_repository.repo -target=google_secret_manager_secret.secrets -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: gcloud auth configure-docker "${{ inputs.region }}-docker.pkg.dev" --quiet
