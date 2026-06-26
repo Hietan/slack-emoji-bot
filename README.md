@@ -1,6 +1,8 @@
-# Emoji Bot
+# Slack Emoji Bot
 
-Emoji Bot is a self-hosted Slack bot that adds exactly three context-aware emoji reactions to configured public-channel top-level messages.
+Self-hosted Slack bot that adds three context-aware emoji reactions to selected public-channel messages.
+
+`v0.1.0` is a narrow, production-shaped MVP: it is intentionally conservative about Slack events, data retention, model output, and cloud permissions.
 
 ```mermaid
 flowchart LR
@@ -12,77 +14,120 @@ flowchart LR
   W <--> F[(Firestore)]
 ```
 
-## Status
+## What It Does
 
-This repository contains the MVP implementation scaffold and core receiver/worker behavior described in `SPECIFICATION.md`.
-
-## Demo Placeholder
-
-Add a short GIF or screenshot here after the first real workspace dry run. The image should show only test messages and bot reactions, with no private channel content, user identities, secrets, or unpublished information.
-
-![Emoji Bot demo placeholder](docs/assets/demo-placeholder.svg)
-
-## What It Handles
-
-- Public channels listed in `TARGET_CHANNEL_IDS`.
-- Top-level ordinary `message.channels` events.
-- Three distinct reactions from `config/emoji.default.yaml`.
-- Custom emoji only when `emoji.list` confirms that they exist.
-- Deterministic fallback when Gemini is unavailable or returns invalid output.
-- Duplicate delivery and partial reaction progress through Firestore state.
+- Reacts only to configured public channels and configured Slack users.
+- Handles only ordinary top-level `message.channels` events.
+- Selects exactly three distinct reactions from an allowlist-backed emoji catalog.
+- Uses Gemini for contextual selection and deterministic fallback when Gemini is unavailable or returns invalid output.
+- Includes custom emoji only after Slack `emoji.list` confirms they exist in the workspace.
+- Uses Cloud Tasks and Firestore so duplicate Slack deliveries do not produce more than three bot reactions.
 
 It does not handle threads, bot posts, edited/deleted messages, private channels, DMs, files, OAuth install flows, slash commands, or custom emoji uploads.
 
-## Privacy Warning
+## Privacy Model
 
-Slack message text is normalized, masked, and truncated before it is sent to Cloud Tasks and Gemini. This masking is limited and does not guarantee complete removal of confidential or personal information. Do not use this bot in channels where secrets, unpublished research, credentials, or personal data may be posted.
+Slack message text is normalized, masked, and truncated before it is sent to Cloud Tasks and Gemini. This reduces exposure but does not make sensitive channels safe.
 
-The app must not persist message text, Gemini input, raw Gemini output, Slack tokens, signatures, or authorization headers. In production, set `GEMINI_UNPAID_TERMS_ACKNOWLEDGED=true` only after accepting that unpaid Gemini API terms do not make sensitive channel content safe to send.
+Do not use this bot in channels where secrets, credentials, unpublished research, regulated data, or personal information may be posted.
 
-## Prerequisites
+The app must not persist Slack message text, Gemini input, raw Gemini output, Slack tokens, signatures, or authorization headers. See [Privacy](docs/privacy.md), [Threat Model](docs/threat-model.md), and [Security Policy](SECURITY.md).
 
-- Node.js 24 LTS
+## Requirements
+
+- Node.js 24
 - pnpm 10
-- A Slack app named `Emoji Bot`
-- A GCP project for Cloud Run, Cloud Tasks, Firestore, Artifact Registry, IAM, and Secret Manager
-- A Gemini API key
+- Docker
+- Terraform
+- A Slack app with `channels:history`, `reactions:write`, and `emoji:read`
+- A GCP project with billing enabled
+- Cloud Run, Cloud Tasks, Firestore, Artifact Registry, Secret Manager, IAM, and Vertex AI
 
 ## Quick Start
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
+pnpm check
+```
+
+For a shorter local loop:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+```
+
+## Deploy
+
+1. Read [Deployment](docs/deployment.md).
+2. Bootstrap Terraform state and GitHub Workload Identity Federation with [infra/bootstrap](infra/bootstrap/README.md).
+3. Add Slack secrets as Secret Manager versions.
+4. Run the `Deploy` GitHub Actions workflow with `dry_run=true`.
+5. Render the Slack manifest and complete Event Subscription URL verification.
+6. Invite the bot to the target public channel.
+7. Redeploy with the final `TARGET_CHANNEL_IDS`, `TARGET_USER_IDS`, and `dry_run=false`.
+
+The default deployment is GCP/Cloud Run based. The application code is split through ports and adapters, so other queues, stores, model providers, or hosting targets can be added without changing domain logic.
+
+## Configuration
+
+Runtime settings are documented in [.env.example](.env.example) and [Configuration](docs/configuration.md). Real secret values should live in Secret Manager or an equivalent secret store, not in `.env` files committed to Git.
+
+Important settings:
+
+- `TARGET_CHANNEL_IDS`: comma-separated Slack public channel IDs.
+- `TARGET_USER_IDS`: comma-separated Slack user IDs whose messages can receive reactions.
+- `DRY_RUN`: when `true`, selection runs but Slack `reactions.add` is skipped.
+- `GEMINI_BACKEND`: `vertex` by default, or `developer` for Gemini Developer API.
+- `EMOJI_CONFIG_PATH`: path to the emoji catalog YAML.
+
+## Emoji Catalog
+
+The default catalog lives at [config/emoji.default.yaml](config/emoji.default.yaml).
+
+`v0.1.0` ships with:
+
+- 40 enabled standard emoji candidates.
+- 30 enabled custom emoji candidates from the `neco202511-2` set.
+- 3 standard fallback reactions: `eyes`, `thinking_face`, `memo`.
+
+Custom emoji names are passed to Slack exactly as configured. If a custom emoji does not exist in the workspace, it is ignored for that event and standard emoji remain available. See [Emoji Catalog](docs/emoji-catalog.md).
+
+## Development
+
+See [Development](docs/development.md) and [Contributing](CONTRIBUTING.md).
+
+Useful commands:
+
+```bash
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm test:integration
 pnpm build
 pnpm validate:config
+pnpm scan:sensitive
+pnpm scan:production
 ```
 
-Copy `.env.example` into your deployment environment and store real secrets in Secret Manager.
+Architecture notes:
 
-## Custom Emoji
+- `src/domain` contains pure domain types and validation.
+- `src/application` contains use cases and ports.
+- `src/adapters` contains Slack, Gemini, Firestore, and Cloud Tasks integrations.
+- `src/receiver` and `src/worker` contain HTTP service wiring.
+- `infra/terraform` owns the default GCP deployment.
 
-Add custom emoji names to `config/emoji.default.yaml` with `kind: custom`. The bot includes them only when Slack `emoji.list` reports that the emoji exists in the workspace.
+## Operations
 
-## Cost
-
-The Terraform defaults use Cloud Run min instances of 0 and bounded concurrency. This project is designed for low cost, but it does not guarantee that operation will be free.
-
-## Troubleshooting
-
-- No reactions: confirm the bot is invited to the channel and `TARGET_CHANNEL_IDS` contains channel IDs, not names.
-- Slack URL verification fails: ensure `SLACK_SIGNING_SECRET`, `SLACK_TEAM_ID`, and `SLACK_APP_ID` match the app.
-- Only fallback reactions appear: check Gemini API key, model, and response logs without exposing message text.
-- Custom emoji are ignored: confirm `emoji:read` scope and that the emoji exists in Slack.
-
-See `docs/troubleshooting.md` for deployment, retry, custom emoji, secret, and cost checks.
+Use [Operations](docs/operations.md) for rollout, monitoring, and incident checks. Use [Troubleshooting](docs/troubleshooting.md) when reactions are missing, fallback-only, duplicated, or custom emoji are ignored.
 
 ## Releases
 
-See `CHANGELOG.md` for release notes and `docs/release.md` for the release checklist.
+This project uses Semantic Versioning and `vMAJOR.MINOR.PATCH` tags. See [CHANGELOG](CHANGELOG.md) and [Release Process](docs/release.md).
 
 ## License
 
-Apache License 2.0. See `LICENSE`.
+Apache License 2.0. See [LICENSE](LICENSE).

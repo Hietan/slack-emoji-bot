@@ -31,7 +31,7 @@ on:
         required: true
         default: "false"
       image_version_tag:
-        description: Optional release image tag, for example v1.0.0
+        description: Optional release image tag, for example v0.1.0
         required: false
         default: ""
 

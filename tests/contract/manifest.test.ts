@@ -95,20 +95,26 @@ describe("contracts", () => {
       "CONTRIBUTING.md",
       "CODE_OF_CONDUCT.md",
       "CHANGELOG.md",
+      "docs/configuration.md",
+      "docs/development.md",
+      "docs/emoji-catalog.md",
+      "docs/index.md",
+      "docs/operations.md",
       "docs/release.md",
       "docs/troubleshooting.md",
       ".github/pull_request_template.md",
       ".github/ISSUE_TEMPLATE/bug_report.yml",
-      ".github/ISSUE_TEMPLATE/feature_request.yml",
-      "docs/assets/demo-placeholder.svg"
+      ".github/ISSUE_TEMPLATE/feature_request.yml"
     ]) {
       expect(existsSync(path), path).toBe(true);
     }
 
     const readme = readFileSync("README.md", "utf8");
-    expect(readme).toContain("Demo Placeholder");
-    expect(readme).toContain("docs/assets/demo-placeholder.svg");
+    expect(readme).toContain("v0.1.0");
     expect(readme).toContain("CHANGELOG.md");
+    expect(readme).toContain("docs/configuration.md");
+    expect(readme).toContain("docs/emoji-catalog.md");
+    expect(readme).toContain("docs/operations.md");
     expect(readme).toContain("docs/release.md");
     expect(readme).toContain("docs/troubleshooting.md");
 
@@ -136,13 +142,13 @@ describe("contracts", () => {
     expect(changelog).toContain("Keep a Changelog");
     expect(changelog).toContain("Semantic Versioning");
     expect(changelog).toContain("## [Unreleased]");
-    expect(changelog).toContain("## [1.0.0] - TBD");
+    expect(changelog).toContain("## [0.1.0] - 2026-06-26");
 
     const release = readFileSync("docs/release.md", "utf8");
     for (const phrase of [
       "Semantic Versioning",
       "vMAJOR.MINOR.PATCH",
-      "pnpm test --coverage",
+      "pnpm test:coverage",
       "pnpm scan:sensitive",
       "pnpm scan:production",
       "terraform -chdir=infra/terraform validate",
@@ -150,8 +156,9 @@ describe("contracts", () => {
       "DRY_RUN=true",
       "DRY_RUN=false",
       "Cloud Logging",
-      "git tag v1.0.0",
-      "Git SHA and `v1.0.0`",
+      "git tag \"v${VERSION}\"",
+      "Git SHA and `v${VERSION}`",
+      "v0.1.0",
       "Do not include Slack message text"
     ]) {
       expect(release).toContain(phrase);

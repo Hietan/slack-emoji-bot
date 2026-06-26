@@ -1,9 +1,26 @@
 {
   "name": "slack-emoji-bot",
   "version": "0.1.0",
+  "description": "Self-hosted Slack bot that adds three context-aware emoji reactions to selected messages.",
   "private": false,
   "license": "Apache-2.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hietan/slack-emoji-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Hietan/slack-emoji-bot/issues"
+  },
+  "homepage": "https://github.com/Hietan/slack-emoji-bot#readme",
+  "keywords": [
+    "slack",
+    "emoji",
+    "bot",
+    "cloud-run",
+    "gemini",
+    "terraform"
+  ],
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
@@ -11,9 +28,11 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build && pnpm validate:config && pnpm scan:sensitive && pnpm scan:production",
     "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run tests/unit tests/contract",
+    "test:coverage": "vitest run tests/unit tests/contract --coverage",
     "test:integration": "vitest run tests/integration",
     "validate:config": "tsx scripts/validate-config.ts",
     "scan:sensitive": "tsx scripts/scan-sensitive-content.ts",

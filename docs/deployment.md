@@ -1,5 +1,7 @@
 # Deployment
 
+Read [Configuration](configuration.md) before deploying, and use [Operations](operations.md) for rollout checks after Cloud Run is live.
+
 1. Create a hosting GCP project and enable billing.
 2. Use the hosting GCP project for Vertex AI Gemini calls.
 3. Create a Slack app with `slack/manifest.bootstrap.yaml` or manually.
@@ -39,3 +41,5 @@
 15. Set `TARGET_CHANNEL_IDS` and `TARGET_USER_IDS`, then redeploy.
 16. Verify with `DRY_RUN=true`.
 17. Set `DRY_RUN=false` and verify that a configured user's top-level message receives three distinct reactions.
+
+For `v0.1.0`, the recommended first production scope is one public channel and one configured target user. Expand channel and user lists only after the first channel behaves as expected.
