@@ -111,7 +111,7 @@ resource "google_cloud_run_v2_service" "receiver" {
     }
     containers {
       image   = var.image
-      command = ["node", "dist/receiver/main.js"]
+      command = ["node", "dist/src/receiver/main.js"]
       resources {
         limits = {
           cpu    = "1"
@@ -192,7 +192,7 @@ resource "google_cloud_run_v2_service" "worker" {
     }
     containers {
       image   = var.image
-      command = ["node", "dist/worker/main.js"]
+      command = ["node", "dist/src/worker/main.js"]
       resources {
         limits = {
           cpu    = "1"

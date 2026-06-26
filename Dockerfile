@@ -21,4 +21,4 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=build /app/dist ./dist
 COPY config ./config
 USER node
-CMD ["node", "dist/receiver/main.js"]
+CMD ["node", "dist/src/receiver/main.js"]

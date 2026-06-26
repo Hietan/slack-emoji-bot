@@ -1256,7 +1256,7 @@ GitHub ActionsでCloud Buildを使わないため，`cloudbuild.googleapis.com` 
 | Memory | 256 MiB |
 | Concurrency | 80 |
 | Request timeout | 10秒 |
-| Container command | `node dist/receiver/main.js` |
+| Container command | `node dist/src/receiver/main.js` |
 
 ### 22.5．Cloud Run worker
 
@@ -1270,7 +1270,7 @@ GitHub ActionsでCloud Buildを使わないため，`cloudbuild.googleapis.com` 
 | Memory | 512 MiB |
 | Concurrency | 4 |
 | Request timeout | 120秒 |
-| Container command | `node dist/worker/main.js` |
+| Container command | `node dist/src/worker/main.js` |
 
 ### 22.6．Service Accounts
 

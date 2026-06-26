@@ -217,14 +217,14 @@ describe("contracts", () => {
       "COPY --from=build /app/dist ./dist",
       "COPY config ./config",
       "USER node",
-      "CMD [\"node\", \"dist/receiver/main.js\"]"
+      "CMD [\"node\", \"dist/src/receiver/main.js\"]"
     ]) {
       expect(dockerfile).toContain(phrase);
     }
 
     expect(terraform).toContain("image   = var.image");
-    expect(terraform).toContain("command = [\"node\", \"dist/receiver/main.js\"]");
-    expect(terraform).toContain("command = [\"node\", \"dist/worker/main.js\"]");
+    expect(terraform).toContain("command = [\"node\", \"dist/src/receiver/main.js\"]");
+    expect(terraform).toContain("command = [\"node\", \"dist/src/worker/main.js\"]");
     expect(dockerfile).not.toContain("SLACK_BOT_TOKEN");
     expect(dockerfile).not.toContain("GEMINI_API_KEY");
     expect(dockerfile).not.toContain("SLACK_SIGNING_SECRET");
