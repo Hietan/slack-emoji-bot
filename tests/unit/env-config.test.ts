@@ -20,7 +20,8 @@ const workerEnv = {
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1,C2",
   SLACK_BOT_TOKEN: "test-slack-token",
-  GEMINI_API_KEY: "test-gemini-key",
+  GEMINI_BACKEND: "vertex",
+  GEMINI_PROJECT_ID: "project",
   GEMINI_UNPAID_TERMS_ACKNOWLEDGED: "true"
 };
 
@@ -31,8 +32,18 @@ describe("environment config", () => {
     const parsedWorker = loadWorkerEnv(workerEnv);
     expect(parsedWorker.targetChannelSet).toEqual(new Set(["C1", "C2"]));
     expect(parsedWorker.EMOJI_CONFIG_PATH).toBe("/app/config/emoji.default.yaml");
+    expect(parsedWorker.GEMINI_BACKEND).toBe("vertex");
+    expect(parsedWorker.GEMINI_LOCATION).toBe("global");
     expect(parsedWorker.LOG_LEVEL).toBe("info");
     expect(loadReceiverEnv({ ...receiverEnv, LOG_LEVEL: "debug" }).LOG_LEVEL).toBe("debug");
+  });
+
+  it("requires the correct Gemini credentials for each backend", () => {
+    expect(() => loadWorkerEnv({ ...workerEnv, GEMINI_BACKEND: "developer", GEMINI_API_KEY: undefined })).toThrow(/GEMINI_API_KEY/u);
+    expect(() => loadWorkerEnv({ ...workerEnv, GEMINI_PROJECT_ID: undefined })).toThrow(/GEMINI_PROJECT_ID/u);
+    expect(loadWorkerEnv({ ...workerEnv, GEMINI_BACKEND: "developer", GEMINI_API_KEY: "test-gemini-key" }).GEMINI_BACKEND).toBe(
+      "developer"
+    );
   });
 
   it("rejects empty or duplicate target channel IDs", () => {

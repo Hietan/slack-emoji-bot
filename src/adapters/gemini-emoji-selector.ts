@@ -21,7 +21,10 @@ const geminiSelectionSchema = z
   .strict();
 
 export type GeminiEmojiSelectorOptions = {
-  apiKey: string;
+  backend?: "developer" | "vertex";
+  apiKey?: string;
+  projectId?: string;
+  location?: string;
   model: string;
   timeoutMs?: number;
   client?: Pick<GoogleGenAI["models"], "generateContent">;
@@ -41,7 +44,7 @@ export class GeminiEmojiSelector implements EmojiSelector {
     }, this.#options.timeoutMs ?? 8000);
     try {
       const allowlist = input.candidates.map((candidate) => candidate.name);
-      const client = this.#options.client ?? new GoogleGenAI({ apiKey: this.#options.apiKey }).models;
+      const client = this.#options.client ?? this.#createClient();
       const request = {
         model: this.#options.model,
         contents: JSON.stringify({
@@ -94,6 +97,24 @@ export class GeminiEmojiSelector implements EmojiSelector {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  #createClient(): Pick<GoogleGenAI["models"], "generateContent"> {
+    if (this.#options.backend === "vertex") {
+      if (this.#options.projectId === undefined || this.#options.location === undefined) {
+        throw new Error("gemini_vertex_config_missing");
+      }
+      return new GoogleGenAI({
+        enterprise: true,
+        project: this.#options.projectId,
+        location: this.#options.location,
+        apiVersion: "v1"
+      }).models;
+    }
+    if (this.#options.apiKey === undefined) {
+      throw new Error("gemini_api_key_missing");
+    }
+    return new GoogleGenAI({ apiKey: this.#options.apiKey }).models;
   }
 }
 

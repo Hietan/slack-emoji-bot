@@ -14,6 +14,7 @@ resource "google_project_service" "required" {
     "firestore.googleapis.com",
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
+    "aiplatform.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
@@ -231,6 +232,18 @@ resource "google_cloud_run_v2_service" "worker" {
         value = tostring(var.dry_run)
       }
       env {
+        name  = "GEMINI_BACKEND"
+        value = "vertex"
+      }
+      env {
+        name  = "GEMINI_PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "GEMINI_LOCATION"
+        value = "global"
+      }
+      env {
         name  = "GEMINI_UNPAID_TERMS_ACKNOWLEDGED"
         value = tostring(var.gemini_unpaid_terms_acknowledged)
       }
@@ -247,15 +260,6 @@ resource "google_cloud_run_v2_service" "worker" {
           }
         }
       }
-      env {
-        name = "GEMINI_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.secrets["${local.service_prefix}-gemini-api-key"].secret_id
-            version = "latest"
-          }
-        }
-      }
     }
     timeout = "120s"
   }
@@ -268,7 +272,7 @@ resource "google_cloud_run_v2_service" "worker" {
   depends_on = [
     google_project_service.required,
     google_secret_manager_secret_iam_member.worker_slack_token_access,
-    google_secret_manager_secret_iam_member.worker_gemini_key_access
+    google_project_iam_member.worker_vertex_ai
   ]
 }
 
@@ -292,6 +296,12 @@ resource "google_project_iam_member" "worker_firestore" {
   member  = "serviceAccount:${google_service_account.worker.email}"
 }
 
+resource "google_project_iam_member" "worker_vertex_ai" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.worker.email}"
+}
+
 resource "google_service_account_iam_member" "receiver_task_sa_user" {
   service_account_id = google_service_account.task_invoker.name
   role               = "roles/iam.serviceAccountUser"
@@ -312,12 +322,6 @@ resource "google_secret_manager_secret_iam_member" "receiver_signing_secret_acce
 
 resource "google_secret_manager_secret_iam_member" "worker_slack_token_access" {
   secret_id = google_secret_manager_secret.secrets["${local.service_prefix}-slack-bot-token"].id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.worker.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "worker_gemini_key_access" {
-  secret_id = google_secret_manager_secret.secrets["${local.service_prefix}-gemini-api-key"].id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.worker.email}"
 }

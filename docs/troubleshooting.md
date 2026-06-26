@@ -17,7 +17,9 @@ Use synthetic test messages only when debugging. Do not paste Slack message text
 
 ## Only Fallback Reactions Appear
 
-- Confirm `GEMINI_API_KEY`, `GEMINI_MODEL`, and `GEMINI_UNPAID_TERMS_ACKNOWLEDGED` are configured.
+- Confirm `GEMINI_BACKEND`, `GEMINI_PROJECT_ID`, `GEMINI_LOCATION`, `GEMINI_MODEL`, and `GEMINI_UNPAID_TERMS_ACKNOWLEDGED` are configured.
+- For the default `GEMINI_BACKEND=vertex`, confirm `aiplatform.googleapis.com` is enabled and the worker service account has `roles/aiplatform.user`.
+- For `GEMINI_BACKEND=developer`, confirm `GEMINI_API_KEY` has available Gemini API quota or credits.
 - Confirm the worker can reach Gemini within `GEMINI_TIMEOUT_MS`.
 - Gemini errors intentionally fall back without retrying Gemini for that event.
 
@@ -36,7 +38,7 @@ Use synthetic test messages only when debugging. Do not paste Slack message text
 ## Deployment Fails On Secrets
 
 - Run the targeted Terraform apply from `docs/deployment.md` first so Secret Manager containers exist.
-- Add versions for `slack-emoji-bot-slack-signing-secret`, `slack-emoji-bot-slack-bot-token`, and `slack-emoji-bot-gemini-api-key` before the first full deploy.
+- Add versions for `slack-emoji-bot-slack-signing-secret` and `slack-emoji-bot-slack-bot-token` before the first full deploy.
 - Do not put secret values in Terraform variables, `.env` files committed to Git, GitHub Actions logs, or release notes.
 
 ## Cost Looks Higher Than Expected

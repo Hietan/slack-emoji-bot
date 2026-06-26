@@ -929,7 +929,7 @@ emojis:
 ### 17.1．APIとSDK
 
 - SDK：`@google/genai` の実装時点における最新安定版．
-- API：Interactions API．
+- API：既定ではVertex AI API．`GEMINI_BACKEND=developer` の場合のみGemini Developer API．
 - Model：環境変数 `GEMINI_MODEL`．既定値 `gemini-2.5-flash-lite`．
 - `store: false`．
 - 背景実行，ツール，検索，URL Context，コード実行は使用しない．
@@ -1151,7 +1151,10 @@ team_access_not_granted
 | 変数 | 必須 | 既定値 | 説明 |
 |---|---:|---|---|
 | `SLACK_BOT_TOKEN` | Yes | なし | Secret Managerから注入 |
-| `GEMINI_API_KEY` | Yes | なし | Secret Managerから注入 |
+| `GEMINI_BACKEND` | No | `vertex` | `vertex` または `developer` |
+| `GEMINI_API_KEY` | `developer`時のみ | なし | Gemini Developer API key |
+| `GEMINI_PROJECT_ID` | `vertex`時のみ | なし | Vertex AI呼出用GCP project ID |
+| `GEMINI_LOCATION` | No | `global` | Vertex AI location |
 | `GEMINI_MODEL` | No | `gemini-2.5-flash-lite` | Gemini model ID |
 | `GEMINI_TIMEOUT_MS` | No | `8000` | 1000〜30000 |
 | `SLACK_TIMEOUT_MS` | No | `5000` | 1000〜30000 |
@@ -1310,7 +1313,7 @@ slack-emoji-bot-slack-bot-token
 slack-emoji-bot-gemini-api-key
 ```
 
-Terraformはsecret containerだけを作成し，secret versionの値を管理しない．値は運用者がCLIまたはConsoleから追加する．
+Terraformはsecret containerだけを作成し，secret versionの値を管理しない．Slack用secret versionの値は運用者がCLIまたはConsoleから追加する．`slack-emoji-bot-gemini-api-key` は `GEMINI_BACKEND=developer` の場合だけ使用する．
 
 ### 22.8．Terraform state
 
@@ -1851,6 +1854,7 @@ MVP実装中にこれらを先行実装してはならない．
 - Cloud Tasks HTTP targets：https://cloud.google.com/tasks/docs/creating-http-target-tasks
 - Cloud Tasks retry behavior：https://cloud.google.com/tasks/docs/common-pitfalls
 - Cloud Run service-to-service authentication：https://cloud.google.com/run/docs/authenticating/service-to-service
+- Vertex AI Gemini API：https://cloud.google.com/vertex-ai/generative-ai/docs
 - Gemini Interactions API：https://ai.google.dev/gemini-api/docs/interactions-overview
 - Gemini structured output：https://ai.google.dev/gemini-api/docs/structured-output
 - Gemini 2.5 Flash-Lite：https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite
