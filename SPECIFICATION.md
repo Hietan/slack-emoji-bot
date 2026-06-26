@@ -1249,7 +1249,7 @@ GitHub ActionsでCloud Buildを使わないため，`cloudbuild.googleapis.com` 
 | 設定 | 値 |
 |---|---|
 | Service name | `slack-emoji-bot-receiver` |
-| Authentication | allow unauthenticated |
+| Authentication | allow unauthenticated by disabling Cloud Run Invoker IAM check |
 | Min instances | 0 |
 | Max instances | 2 |
 | CPU | 1 |

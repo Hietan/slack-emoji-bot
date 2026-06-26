@@ -98,9 +98,10 @@ resource "google_cloud_tasks_queue" "queue" {
 }
 
 resource "google_cloud_run_v2_service" "receiver" {
-  name     = "${local.service_prefix}-receiver"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  name                 = "${local.service_prefix}-receiver"
+  location             = var.region
+  ingress              = "INGRESS_TRAFFIC_ALL"
+  invoker_iam_disabled = true
 
   scaling {
     min_instance_count = 0
@@ -269,14 +270,6 @@ resource "google_cloud_run_v2_service" "worker" {
     google_secret_manager_secret_iam_member.worker_slack_token_access,
     google_secret_manager_secret_iam_member.worker_gemini_key_access
   ]
-}
-
-resource "google_cloud_run_v2_service_iam_member" "receiver_public" {
-  project  = var.project_id
-  location = google_cloud_run_v2_service.receiver.location
-  name     = google_cloud_run_v2_service.receiver.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
 }
 
 resource "google_cloud_run_v2_service_iam_member" "worker_task_invoker" {
