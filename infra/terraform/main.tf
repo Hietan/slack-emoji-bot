@@ -14,7 +14,10 @@ resource "google_project_service" "required" {
     "firestore.googleapis.com",
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+    "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "serviceusage.googleapis.com",
     "sts.googleapis.com"
   ])
 

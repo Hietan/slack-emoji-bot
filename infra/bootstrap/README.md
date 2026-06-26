@@ -77,6 +77,7 @@ for role in \
   roles/secretmanager.admin \
   roles/iam.serviceAccountAdmin \
   roles/iam.serviceAccountUser \
+  roles/resourcemanager.projectIamAdmin \
   roles/serviceusage.serviceUsageAdmin
 do
   gcloud projects add-iam-policy-binding "$PROJECT_ID" \
