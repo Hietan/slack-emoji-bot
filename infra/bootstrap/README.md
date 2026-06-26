@@ -27,7 +27,7 @@ export GITHUB_REPO="slack-emoji-bot"
 export REGION="asia-northeast1"
 export POOL_ID="github-actions"
 export PROVIDER_ID="github"
-export DEPLOYER_SA="slack-emoji-bot-github-deployer"
+export DEPLOYER_SA="slack-emoji-bot-deployer"
 ```
 
 Create the deployer service account:
@@ -85,11 +85,23 @@ do
 done
 ```
 
+Grant the deployer access to the Terraform state bucket:
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://YOUR_STATE_BUCKET \
+  --member="serviceAccount:${DEPLOYER_SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin"
+
+gcloud storage buckets add-iam-policy-binding gs://YOUR_STATE_BUCKET \
+  --member="serviceAccount:${DEPLOYER_SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.legacyBucketReader"
+```
+
 Add these GitHub repository secrets:
 
 ```text
 GCP_WORKLOAD_IDENTITY_PROVIDER=projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/providers/github
-GCP_DEPLOYER_SERVICE_ACCOUNT=slack-emoji-bot-github-deployer@PROJECT_ID.iam.gserviceaccount.com
+GCP_DEPLOYER_SERVICE_ACCOUNT=slack-emoji-bot-deployer@PROJECT_ID.iam.gserviceaccount.com
 ```
 
 Before the first full deploy, run the targeted Terraform apply from `docs/deployment.md` to create the Secret Manager containers, then add the three secret versions. Do not wait until after Cloud Run creation, because the services reference the `latest` secret versions at deploy time.
