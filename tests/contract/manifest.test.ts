@@ -183,6 +183,8 @@ describe("contracts", () => {
     expect(deployWorkflow).toContain("workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}");
     expect(deployWorkflow).toContain("service_account: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}");
     expect(deployWorkflow).toContain("id-token: write");
+    expect(deployWorkflow).toContain("$receiver_url/livez");
+    expect(deployWorkflow).toContain("gcloud run services describe slack-emoji-bot-worker");
     expect(deployWorkflow).not.toContain("credentials_json");
     expect(deployWorkflow).not.toContain("GOOGLE_APPLICATION_CREDENTIALS");
 

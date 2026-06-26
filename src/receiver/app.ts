@@ -9,9 +9,11 @@ import { systemClock } from "../shared/clock.js";
 export function createReceiverApp(input: { env: ReceiverEnv; taskQueue: TaskQueue; clock?: Clock }) {
   const app = express();
   const clock = input.clock ?? systemClock;
-  app.get("/healthz", (_request, response) => {
+  const healthHandler: RequestHandler = (_request, response) => {
     response.status(200).json({ ok: true, service: "receiver" });
-  });
+  };
+  app.get("/healthz", healthHandler);
+  app.get("/livez", healthHandler);
   app.use(
     "/slack/events",
     requireJsonContentType,

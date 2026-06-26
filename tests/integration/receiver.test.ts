@@ -36,7 +36,7 @@ describe("receiver app", () => {
   it("returns health status without external calls", async () => {
     const enqueue: (payload: TaskPayload) => Promise<EnqueueTaskResult> = vi.fn(() => Promise.resolve<EnqueueTaskResult>("created"));
     const app = createReceiverApp({ env, taskQueue: { enqueue }, clock });
-    const response = await request(app).get("/healthz");
+    const response = await request(app).get("/livez");
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, service: "receiver" });
     expect(enqueue).not.toHaveBeenCalled();

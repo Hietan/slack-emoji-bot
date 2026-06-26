@@ -364,7 +364,7 @@ settings:
 
 ## 9．`receiver` HTTP仕様
 
-### 9.1．`GET /healthz`
+### 9.1．`GET /healthz`, `GET /livez`
 
 - 認証：不要．
 - 成功：`200 application/json`．
@@ -555,7 +555,7 @@ slack-event-{sha256(eventId).slice(0, 40)}
 
 ## 12．`worker` HTTP仕様
 
-### 12.1．`GET /healthz`
+### 12.1．`GET /healthz`, `GET /livez`
 
 ```json
 {
@@ -1652,7 +1652,7 @@ pnpm validate:config
 4. Artifact Registryへpush．
 5. Terraform plan．
 6. Terraform apply．
-7. receiverとworkerの `/healthz` を確認．
+7. receiverの `/livez` とworkerのReady状態を確認．
 8. receiver URLをjob summaryへ表示する．
 
 ### 27.3．リリース

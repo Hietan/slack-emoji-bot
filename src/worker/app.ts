@@ -20,9 +20,11 @@ export function createWorkerApp(input: {
 }) {
   const app = express();
   const clock = input.clock ?? systemClock;
-  app.get("/healthz", (_request, response) => {
+  const healthHandler = (_request: express.Request, response: express.Response) => {
     response.status(200).json({ ok: true, service: "worker" });
-  });
+  };
+  app.get("/healthz", healthHandler);
+  app.get("/livez", healthHandler);
   app.use(express.json({ limit: "64kb" }));
   app.use(
     "/tasks/process",

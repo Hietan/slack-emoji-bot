@@ -58,6 +58,25 @@ const payload: TaskPayload = {
 };
 
 describe("worker app", () => {
+  it("returns health status without external calls", async () => {
+    const selector = { select: vi.fn(() => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"] as [string, string, string], source: "gemini" as const })) };
+    const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
+    const app = createWorkerApp({
+      env,
+      emojiConfig,
+      repository: new MemoryProcessRepository(),
+      emojiCatalog: { listCustomEmojiNames: vi.fn(() => Promise.resolve(new Set<string>())) },
+      emojiSelector: selector,
+      reactionClient,
+      clock: { now: () => new Date("2026-06-25T00:00:00.000Z") }
+    });
+    const response = await request(app).get("/livez");
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, service: "worker" });
+    expect(selector.select).not.toHaveBeenCalled();
+    expect(reactionClient.addReaction).not.toHaveBeenCalled();
+  });
+
   it("processes a task and completes three reactions", async () => {
     const repository = new MemoryProcessRepository();
     const reactionClient = { addReaction: vi.fn(() => Promise.resolve({ ok: true as const })) };
