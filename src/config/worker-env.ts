@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { configError, zodConfigIssues } from "./env-errors.js";
-import { parseTargetChannelSet } from "./target-channels.js";
+import { parseTargetChannelSet, parseTargetUserSet } from "./target-channels.js";
 
 const optionalNonEmptyString = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional());
 
@@ -11,6 +11,7 @@ const workerEnvSchema = z.object({
   SLACK_TEAM_ID: z.string().min(1),
   SLACK_APP_ID: z.string().min(1),
   TARGET_CHANNEL_IDS: z.string().min(1),
+  TARGET_USER_IDS: z.string().min(1),
   SLACK_BOT_TOKEN: z.string().min(1),
   GEMINI_BACKEND: z.enum(["developer", "vertex"]).default("vertex"),
   GEMINI_API_KEY: optionalNonEmptyString,
@@ -35,6 +36,7 @@ const workerEnvSchema = z.object({
 
 export type WorkerEnv = z.infer<typeof workerEnvSchema> & {
   targetChannelSet: ReadonlySet<string>;
+  targetUserSet: ReadonlySet<string>;
 };
 
 export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEnv {
@@ -53,8 +55,9 @@ export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEn
   }
   try {
     const targetChannelSet = parseTargetChannelSet(parsed.data.TARGET_CHANNEL_IDS);
-    return { ...parsed.data, targetChannelSet };
+    const targetUserSet = parseTargetUserSet(parsed.data.TARGET_USER_IDS);
+    return { ...parsed.data, targetChannelSet, targetUserSet };
   } catch (error) {
-    throw configError("Invalid worker environment", [`TARGET_CHANNEL_IDS: ${error instanceof Error ? error.message : "invalid value"}`]);
+    throw configError("Invalid worker environment", [error instanceof Error ? error.message : "invalid target ID list"]);
   }
 }

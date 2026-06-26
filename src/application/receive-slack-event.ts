@@ -12,6 +12,7 @@ export type ReceiveSlackEventConfig = {
   teamId: string;
   apiAppId: string;
   targetChannelIds: ReadonlySet<string>;
+  targetUserIds: ReadonlySet<string>;
   maxAnalysisTextChars: number;
 };
 
@@ -26,7 +27,8 @@ export async function receiveSlackEvent(input: {
   const decision = decideSlackEvent(input.envelope, normalized, {
     teamId: input.config.teamId,
     apiAppId: input.config.apiAppId,
-    targetChannelIds: input.config.targetChannelIds
+    targetChannelIds: input.config.targetChannelIds,
+    targetUserIds: input.config.targetUserIds
   });
   if (!decision.accepted) {
     return { ok: true, accepted: false, reason: decision.reason };

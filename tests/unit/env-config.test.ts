@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadReceiverEnv } from "../../src/config/receiver-env.js";
-import { parseTargetChannelSet } from "../../src/config/target-channels.js";
+import { parseTargetChannelSet, parseTargetUserSet } from "../../src/config/target-channels.js";
 import { loadWorkerEnv } from "../../src/config/worker-env.js";
 
 const receiverEnv = {
@@ -9,6 +9,7 @@ const receiverEnv = {
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1,C2",
+  TARGET_USER_IDS: "U1,U2",
   GCP_PROJECT_ID: "project",
   WORKER_URL: "https://worker.example.com",
   TASK_INVOKER_SERVICE_ACCOUNT_EMAIL: "task@example.iam.gserviceaccount.com"
@@ -19,6 +20,7 @@ const workerEnv = {
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1,C2",
+  TARGET_USER_IDS: "U1,U2",
   SLACK_BOT_TOKEN: "test-slack-token",
   GEMINI_BACKEND: "vertex",
   GEMINI_PROJECT_ID: "project",
@@ -28,9 +30,11 @@ const workerEnv = {
 describe("environment config", () => {
   it("parses unique target channel IDs", () => {
     expect(parseTargetChannelSet(" C1 , C2 ")).toEqual(new Set(["C1", "C2"]));
+    expect(parseTargetUserSet(" U1 , U2 ")).toEqual(new Set(["U1", "U2"]));
     expect(loadReceiverEnv(receiverEnv).targetChannelSet).toEqual(new Set(["C1", "C2"]));
     const parsedWorker = loadWorkerEnv(workerEnv);
     expect(parsedWorker.targetChannelSet).toEqual(new Set(["C1", "C2"]));
+    expect(parsedWorker.targetUserSet).toEqual(new Set(["U1", "U2"]));
     expect(parsedWorker.EMOJI_CONFIG_PATH).toBe("/app/config/emoji.default.yaml");
     expect(parsedWorker.GEMINI_BACKEND).toBe("vertex");
     expect(parsedWorker.GEMINI_LOCATION).toBe("global");
@@ -49,8 +53,10 @@ describe("environment config", () => {
   it("rejects empty or duplicate target channel IDs", () => {
     expect(() => parseTargetChannelSet("C1,,C2")).toThrow(/empty/u);
     expect(() => parseTargetChannelSet("C1,C1")).toThrow(/duplicate/u);
+    expect(() => parseTargetUserSet("U1,,U2")).toThrow(/empty/u);
+    expect(() => parseTargetUserSet("U1,U1")).toThrow(/duplicate/u);
     expect(() => loadReceiverEnv({ ...receiverEnv, TARGET_CHANNEL_IDS: "C1,C1" })).toThrow(/duplicate/u);
-    expect(() => loadWorkerEnv({ ...workerEnv, TARGET_CHANNEL_IDS: "C1," })).toThrow(/empty/u);
+    expect(() => loadWorkerEnv({ ...workerEnv, TARGET_USER_IDS: "U1," })).toThrow(/empty/u);
   });
 
   it("requires Gemini unpaid terms acknowledgement in production", () => {

@@ -38,6 +38,7 @@ export type AcceptedSlackEvent = {
   apiAppId: string;
   eventTime: number;
   channelId: string;
+  userId: string;
   messageTs: string;
   analysisText: string;
   textSha256: string;
@@ -51,6 +52,7 @@ export type SlackEventConfig = {
   teamId: string;
   apiAppId: string;
   targetChannelIds: ReadonlySet<string>;
+  targetUserIds: ReadonlySet<string>;
 };
 
 export function decideSlackEvent(input: unknown, normalizedText: NormalizedText, config: SlackEventConfig): SlackEventDecision {
@@ -86,6 +88,9 @@ export function decideSlackEvent(input: unknown, normalizedText: NormalizedText,
   if (event.data.user === undefined || event.data.user.length === 0) {
     return { accepted: false, reason: "missing_user" };
   }
+  if (!config.targetUserIds.has(event.data.user)) {
+    return { accepted: false, reason: "user_not_configured" };
+  }
   const ts = slackTimestampSchema.safeParse(event.data.ts);
   if (!ts.success) {
     return { accepted: false, reason: "invalid_timestamp" };
@@ -104,6 +109,7 @@ export function decideSlackEvent(input: unknown, normalizedText: NormalizedText,
       apiAppId: envelope.data.api_app_id,
       eventTime: envelope.data.event_time,
       channelId: event.data.channel,
+      userId: event.data.user,
       messageTs: ts.data,
       analysisText: normalizedText.analysisText,
       textSha256: normalizedText.textSha256

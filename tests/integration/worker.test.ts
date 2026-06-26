@@ -30,6 +30,7 @@ const env: WorkerEnv = {
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1",
+  TARGET_USER_IDS: "U1",
   SLACK_BOT_TOKEN: "test-slack-token",
   GEMINI_BACKEND: "vertex",
   GEMINI_PROJECT_ID: "project",
@@ -43,7 +44,8 @@ const env: WorkerEnv = {
   FIRESTORE_DATABASE_ID: "(default)",
   PROCESS_RECORD_TTL_DAYS: 7,
   DRY_RUN: false,
-  targetChannelSet: new Set(["C1"])
+  targetChannelSet: new Set(["C1"]),
+  targetUserSet: new Set(["U1"])
 };
 
 const payload: TaskPayload = {
@@ -53,6 +55,7 @@ const payload: TaskPayload = {
   apiAppId: "A1",
   eventTime: 1712345678,
   channelId: "C1",
+  userId: "U1",
   messageTs: "1712345678.123456",
   analysisText: "hello",
   textSha256: "a".repeat(64),
@@ -127,7 +130,7 @@ describe("worker app", () => {
       reactionClient,
       clock: { now: () => new Date("2026-06-25T00:00:00.000Z") }
     });
-    const response = await request(app).post("/tasks/process").send({ ...payload, userId: "U1" });
+    const response = await request(app).post("/tasks/process").send({ ...payload, rawText: "secret" });
     expect(response.status).toBe(204);
     expect(selector.select).not.toHaveBeenCalled();
     expect(reactionClient.addReaction).not.toHaveBeenCalled();

@@ -27,6 +27,7 @@ describe("contracts", () => {
       "SLACK_TEAM_ID",
       "SLACK_APP_ID",
       "TARGET_CHANNEL_IDS",
+      "TARGET_USER_IDS",
       "SLACK_SIGNING_SECRET",
       "GCP_PROJECT_ID",
       "GCP_REGION",
@@ -65,11 +66,11 @@ describe("contracts", () => {
       apiAppId: "A1",
       eventTime: 1712345678,
       channelId: "C1",
+      userId: "U1",
       messageTs: "1712345678.123456",
       analysisText: "hello",
       textSha256: "a".repeat(64),
       receivedAt: "2026-06-25T00:00:00.000Z",
-      userId: "U1",
       rawText: "secret"
     };
     expect(taskPayloadSchema.strict().safeParse(payload).success).toBe(false);
@@ -80,6 +81,7 @@ describe("contracts", () => {
     const firestoreRepository = readFileSync("src/adapters/firestore-process-repository.ts", "utf8");
 
     expect(taskPayloadSchema.shape.apiAppId).toBeDefined();
+    expect(taskPayloadSchema.shape.userId).toBeDefined();
     expect(processState).not.toContain("apiAppId: string");
     expect(firestoreRepository).not.toContain("apiAppId: payload.apiAppId");
     expect(firestoreRepository).toContain("apiAppId?: string");
@@ -245,6 +247,7 @@ describe("contracts", () => {
       "Vertex AI Gemini calls",
       "Slack App ID, Team ID, and Signing Secret",
       "Bot Token",
+      "target Slack user IDs",
       "before the first full deploy",
       "-target=google_secret_manager_secret.secrets",
       "before creating Cloud Run services",
@@ -254,7 +257,8 @@ describe("contracts", () => {
       "GEMINI_BACKEND=developer",
       "Slack Event Subscription URL verification",
       "DRY_RUN=true",
-      "DRY_RUN=false"
+      "DRY_RUN=false",
+      "TARGET_USER_IDS"
     ]) {
       expect(deployment).toContain(phrase);
     }
@@ -294,6 +298,7 @@ describe("contracts", () => {
       "INGRESS_TRAFFIC_INTERNAL_ONLY",
       "name  = \"NODE_ENV\"",
       "value = \"production\"",
+      "name  = \"TARGET_USER_IDS\"",
       "name  = \"GEMINI_BACKEND\"",
       "value = \"vertex\"",
       "name  = \"GEMINI_LOCATION\"",

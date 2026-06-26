@@ -37,6 +37,7 @@ export function createProcessTaskRouter(input: {
         teamId: input.env.SLACK_TEAM_ID,
         apiAppId: input.env.SLACK_APP_ID,
         targetChannelIds: input.env.targetChannelSet,
+        targetUserIds: input.env.targetUserSet,
         dryRun: input.env.DRY_RUN,
         leaseSeconds: LEASE_SECONDS
       },

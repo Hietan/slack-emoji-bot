@@ -8,6 +8,7 @@ export const taskPayloadSchema = z
     apiAppId: z.string().min(1),
     eventTime: z.number().int(),
     channelId: z.string().min(1),
+    userId: z.string().min(1),
     messageTs: z.string().regex(/^\d{10}\.\d{6}$/u),
     analysisText: z.string().min(1).max(10000),
     textSha256: z.string().regex(/^[a-f0-9]{64}$/u),

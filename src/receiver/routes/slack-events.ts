@@ -61,6 +61,7 @@ export function createSlackEventsRouter(input: { env: ReceiverEnv; taskQueue: Ta
           teamId: input.env.SLACK_TEAM_ID,
           apiAppId: input.env.SLACK_APP_ID,
           targetChannelIds: input.env.targetChannelSet,
+          targetUserIds: input.env.targetUserSet,
           maxAnalysisTextChars: input.env.MAX_ANALYSIS_TEXT_CHARS
         },
         taskQueue: input.taskQueue,

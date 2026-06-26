@@ -14,6 +14,11 @@ variable "target_channel_ids" {
   description = "Comma-separated Slack public channel IDs."
 }
 
+variable "target_user_ids" {
+  type        = string
+  description = "Comma-separated Slack user IDs whose messages should receive reactions."
+}
+
 variable "slack_team_id" {
   type        = string
   description = "Slack team ID."

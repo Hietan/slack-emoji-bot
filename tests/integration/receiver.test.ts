@@ -14,13 +14,15 @@ const env: ReceiverEnv = {
   SLACK_TEAM_ID: "T1",
   SLACK_APP_ID: "A1",
   TARGET_CHANNEL_IDS: "C1",
+  TARGET_USER_IDS: "U1",
   GCP_PROJECT_ID: "project",
   GCP_REGION: "asia-northeast1",
   CLOUD_TASKS_QUEUE_ID: "emoji-reaction-jobs",
   WORKER_URL: "https://worker.example.com",
   TASK_INVOKER_SERVICE_ACCOUNT_EMAIL: "task@example.iam.gserviceaccount.com",
   MAX_ANALYSIS_TEXT_CHARS: 2000,
-  targetChannelSet: new Set(["C1"])
+  targetChannelSet: new Set(["C1"]),
+  targetUserSet: new Set(["U1"])
 };
 
 const clock = { now: () => new Date("2026-06-25T00:00:00.000Z") };

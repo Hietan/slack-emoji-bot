@@ -32,6 +32,7 @@ const payload: TaskPayload = {
   apiAppId: "A1",
   eventTime: 1712345678,
   channelId: "C1",
+  userId: "U1",
   messageTs: "1712345678.123456",
   analysisText: "hello",
   textSha256: "a".repeat(64),
@@ -43,6 +44,7 @@ const base = {
     teamId: "T1",
     apiAppId: "A1",
     targetChannelIds: new Set(["C1"]),
+    targetUserIds: new Set(["U1"]),
     dryRun: false,
     leaseSeconds: 1
   },
@@ -91,7 +93,7 @@ describe("processSlackEvent", () => {
     const invalidEvents: unknown[] = [];
     await processSlackEvent({
       ...base,
-      payload: { ...payload, channelId: "C2" },
+      payload: { ...payload, userId: "U2" },
       repository: new MemoryProcessRepository(),
       emojiSelector: { select: () => Promise.resolve({ names: ["eyes", "white_check_mark", "tada"], source: "gemini" }) },
       reactionClient: { addReaction: () => Promise.resolve({ ok: true as const }) },
@@ -224,7 +226,7 @@ describe("processSlackEvent", () => {
     await expect(
       processSlackEvent({
         ...base,
-        payload: { ...payload, channelId: "C2" },
+        payload: { ...payload, userId: "U2" },
         repository,
         emojiSelector: selector,
         reactionClient

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { configError, zodConfigIssues } from "./env-errors.js";
-import { parseTargetChannelSet } from "./target-channels.js";
+import { parseTargetChannelSet, parseTargetUserSet } from "./target-channels.js";
 
 const receiverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]),
@@ -10,6 +10,7 @@ const receiverEnvSchema = z.object({
   SLACK_TEAM_ID: z.string().min(1),
   SLACK_APP_ID: z.string().min(1),
   TARGET_CHANNEL_IDS: z.string().min(1),
+  TARGET_USER_IDS: z.string().min(1),
   GCP_PROJECT_ID: z.string().min(1),
   GCP_REGION: z.string().min(1).default("asia-northeast1"),
   CLOUD_TASKS_QUEUE_ID: z.string().min(1).default("emoji-reaction-jobs"),
@@ -20,6 +21,7 @@ const receiverEnvSchema = z.object({
 
 export type ReceiverEnv = z.infer<typeof receiverEnvSchema> & {
   targetChannelSet: ReadonlySet<string>;
+  targetUserSet: ReadonlySet<string>;
 };
 
 export function loadReceiverEnv(source: NodeJS.ProcessEnv = process.env): ReceiverEnv {
@@ -29,8 +31,9 @@ export function loadReceiverEnv(source: NodeJS.ProcessEnv = process.env): Receiv
   }
   try {
     const targetChannelSet = parseTargetChannelSet(parsed.data.TARGET_CHANNEL_IDS);
-    return { ...parsed.data, targetChannelSet };
+    const targetUserSet = parseTargetUserSet(parsed.data.TARGET_USER_IDS);
+    return { ...parsed.data, targetChannelSet, targetUserSet };
   } catch (error) {
-    throw configError("Invalid receiver environment", [`TARGET_CHANNEL_IDS: ${error instanceof Error ? error.message : "invalid value"}`]);
+    throw configError("Invalid receiver environment", [error instanceof Error ? error.message : "invalid target ID list"]);
   }
 }

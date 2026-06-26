@@ -12,7 +12,9 @@ Use synthetic test messages only when debugging. Do not paste Slack message text
 
 - Confirm the bot is invited to the target public channel.
 - Confirm `TARGET_CHANNEL_IDS` contains Slack channel IDs such as `C0123456789`, not channel names.
+- Confirm `TARGET_USER_IDS` contains Slack user IDs such as `U0123456789`, not display names.
 - Confirm the event is a top-level public-channel message, not a thread reply, bot post, file-only post, edited message, DM, or private-channel message.
+- Messages from users outside `TARGET_USER_IDS` are ignored before Cloud Tasks, Gemini, or reactions.
 - Check Cloud Tasks and worker logs for `worker_lease_acquired` and `worker_completed`.
 
 ## Only Fallback Reactions Appear

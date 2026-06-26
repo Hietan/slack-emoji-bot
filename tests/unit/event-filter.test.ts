@@ -28,7 +28,8 @@ describe("decideSlackEvent", () => {
     const result = decideSlackEvent(envelope({}), normalized, {
       teamId: "T1",
       apiAppId: "A1",
-      targetChannelIds: new Set(["C1"])
+      targetChannelIds: new Set(["C1"]),
+      targetUserIds: new Set(["U1"])
     });
     expect(result.accepted).toBe(true);
   });
@@ -42,6 +43,7 @@ describe("decideSlackEvent", () => {
     { input: { ...envelope({}), event: { type: "reaction_added" } }, text: normalized, reason: "unsupported_event_type" },
     { input: envelope({ channel: undefined }), text: normalized, reason: "channel_not_configured" },
     { input: envelope({ channel: "C2" }), text: normalized, reason: "channel_not_configured" },
+    { input: envelope({ user: "U2" }), text: normalized, reason: "user_not_configured" },
     { input: envelope({ thread_ts: "1712345678.123456" }), text: normalized, reason: "thread_reply" },
     { input: envelope({ subtype: "message_changed" }), text: normalized, reason: "message_subtype" },
     { input: envelope({ bot_id: "B1" }), text: normalized, reason: "bot_message" },
@@ -56,7 +58,8 @@ describe("decideSlackEvent", () => {
     const result = decideSlackEvent(input, text, {
       teamId: "T1",
       apiAppId: "A1",
-      targetChannelIds: new Set(["C1"])
+      targetChannelIds: new Set(["C1"]),
+      targetUserIds: new Set(["U1"])
     });
     expect(result).toMatchObject({ accepted: false, reason });
   });

@@ -142,6 +142,10 @@ resource "google_cloud_run_v2_service" "receiver" {
         value = var.target_channel_ids
       }
       env {
+        name  = "TARGET_USER_IDS"
+        value = var.target_user_ids
+      }
+      env {
         name  = "GCP_PROJECT_ID"
         value = var.project_id
       }
@@ -226,6 +230,10 @@ resource "google_cloud_run_v2_service" "worker" {
       env {
         name  = "TARGET_CHANNEL_IDS"
         value = var.target_channel_ids
+      }
+      env {
+        name  = "TARGET_USER_IDS"
+        value = var.target_user_ids
       }
       env {
         name  = "DRY_RUN"

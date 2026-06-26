@@ -33,13 +33,14 @@ describe("receiveSlackEvent", () => {
         teamId: "T1",
         apiAppId: "A1",
         targetChannelIds: new Set(["C1"]),
+        targetUserIds: new Set(["U1"]),
         maxAnalysisTextChars: 2000
       },
       taskQueue: { enqueue },
       clock: { now: () => new Date("2026-06-25T00:00:00.000Z") }
     });
     expect(result).toEqual({ ok: true, accepted: true, duplicateTask: false });
-    expect(capturedPayload).toMatchObject({ analysisText: "hello @user", schemaVersion: 1 });
+    expect(capturedPayload).toMatchObject({ analysisText: "hello @user", schemaVersion: 1, userId: "U1" });
   });
 
   it("returns ignored reasons without enqueueing", async () => {
@@ -51,6 +52,7 @@ describe("receiveSlackEvent", () => {
         teamId: "T1",
         apiAppId: "A1",
         targetChannelIds: new Set(["C1"]),
+        targetUserIds: new Set(["U1"]),
         maxAnalysisTextChars: 2000
       },
       taskQueue: { enqueue },

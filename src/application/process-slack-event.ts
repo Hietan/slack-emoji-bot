@@ -39,6 +39,7 @@ export type ProcessSlackEventConfig = {
   teamId: string;
   apiAppId: string;
   targetChannelIds: ReadonlySet<string>;
+  targetUserIds: ReadonlySet<string>;
   dryRun: boolean;
   leaseSeconds: number;
 };
@@ -59,7 +60,8 @@ export async function processSlackEvent(input: {
   if (
     payload.teamId !== config.teamId ||
     payload.apiAppId !== config.apiAppId ||
-    !config.targetChannelIds.has(payload.channelId)
+    !config.targetChannelIds.has(payload.channelId) ||
+    !config.targetUserIds.has(payload.userId)
   ) {
     input.observer?.({ event: "worker_completed", eventIdHash: hashedEventId, status: "invalid_task" });
     return { kind: "invalid_task" };

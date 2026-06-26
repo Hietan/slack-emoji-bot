@@ -3,6 +3,7 @@ export type IgnoredReason =
   | "unsupported_event_type"
   | "unsupported_channel_type"
   | "channel_not_configured"
+  | "user_not_configured"
   | "message_subtype"
   | "thread_reply"
   | "bot_message"

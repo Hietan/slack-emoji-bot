@@ -11,6 +11,7 @@ const payload: TaskPayload = {
   apiAppId: "A1",
   eventTime: 1712345678,
   channelId: "C1",
+  userId: "U1",
   messageTs: "1712345678.123456",
   analysisText: "masked text",
   textSha256: "a".repeat(64),
@@ -86,7 +87,6 @@ describe("CloudTasksQueue", () => {
     }
     const body = JSON.parse(Buffer.from(encodedBody, "base64").toString("utf8")) as Record<string, unknown>;
     expect(body).toMatchObject(payload);
-    expect(body).not.toHaveProperty("userId");
     expect(body).not.toHaveProperty("rawText");
     expect(body).not.toHaveProperty("slackToken");
   });
