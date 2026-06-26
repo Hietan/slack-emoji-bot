@@ -83,6 +83,6 @@ jobs:
       - run: |
           receiver_url="$(terraform -chdir=infra/terraform output -raw receiver_url)"
           curl --fail --silent --show-error "$receiver_url/livez"
-          worker_ready="$(gcloud run services describe slack-emoji-bot-worker --project="${{ inputs.project_id }}" --region="${{ inputs.region }}" --format='value(status.conditions[?type=Ready].status)')"
+          worker_ready="$(gcloud run services describe slack-emoji-bot-worker --project="${{ inputs.project_id }}" --region="${{ inputs.region }}" --format='value(status.conditions[0].status)')"
           test "$worker_ready" = "True"
           echo "Receiver URL=$receiver_url" >> "$GITHUB_STEP_SUMMARY"
