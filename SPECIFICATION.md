@@ -766,147 +766,54 @@ emojis:
 
 ### 15.4．既定設定
 
-```yaml
-version: 1
-fallback:
-  - eyes
-  - thinking_face
-  - memo
+既定設定の正は `config/emoji.default.yaml` とする．実装時点では次を含む．
 
-emojis:
-  - name: eyes
-    kind: standard
-    enabled: true
-    description: 内容を確認した，または注目していることを示す中立的な反応．
-    use_when: 告知，共有，確認依頼，状況把握．
-    avoid_when: 監視や威圧と受け取られやすい個人的な内容．
+- fallback：`eyes`, `thinking_face`, `memo`
+- 有効な標準絵文字：40件
+- 有効なカスタム絵文字：30件
+- 無効なプレースホルダー：`nice_research`
 
-  - name: white_check_mark
-    kind: standard
-    enabled: true
-    description: 完了，解決，合意，確認済みを示す．
-    use_when: タスク完了，問題解決，明確な承認．
-    avoid_when: 未確定の提案，質問，進行中の問題．
+標準絵文字は，確認，称賛，感謝，議論，調査，注意，予定，文書，修理，
+緊急，ヘルプ，軽い笑いなど，チームメイトの自然な反応として使える
+範囲を既定候補にする．
 
-  - name: thumbsup
-    kind: standard
-    enabled: true
-    description: 肯定，賛同，良い判断を示す．
-    use_when: 提案への賛同，軽い肯定，良い共有．
-    avoid_when: 深刻な障害，事故，失敗，悲報．
+カスタム絵文字は `neco202511-2.zip` 由来のファイル名から選ぶ．
+名前は拡張子を除いたファイル名と同一とし，設定schemaを満たすASCII名だけを
+既定で有効化する．
 
-  - name: clap
-    kind: standard
-    enabled: true
-    description: 努力や成果を称える．
-    use_when: 成果発表，達成，良い発表や貢献．
-    avoid_when: 深刻な問題，個人的な苦痛，未解決の失敗．
+有効なカスタム絵文字名は次の30件である．
 
-  - name: tada
-    kind: standard
-    enabled: true
-    description: 明確な成功や祝賀を示す．
-    use_when: リリース，採択，受賞，目標達成．
-    avoid_when: 曖昧な報告，障害，失敗，注意喚起．
-
-  - name: sparkles
-    kind: standard
-    enabled: true
-    description: 新しさ，改善，洗練された成果を示す．
-    use_when: 新機能，改善，創造的な成果．
-    avoid_when: 障害，事故，否定的な報告．
-
-  - name: bulb
-    kind: standard
-    enabled: true
-    description: アイデア，発見，提案を示す．
-    use_when: 新しい案，研究上の示唆，改善提案．
-    avoid_when: 単なる完了報告，明確な悲報．
-
-  - name: thinking_face
-    kind: standard
-    enabled: true
-    description: 検討，判断保留，考察を示す中立的な反応．
-    use_when: 議論，問い，検討事項，曖昧な内容．
-    avoid_when: 明確な祝賀だけで十分な内容．
-
-  - name: question
-    kind: standard
-    enabled: true
-    description: 質問，確認不足，不明点を示す．
-    use_when: 問いかけ，仕様確認，不明点の提示．
-    avoid_when: 完了済みで疑問のない報告．
-
-  - name: memo
-    kind: standard
-    enabled: true
-    description: 記録，文書，議事，情報共有を示す．
-    use_when: 資料共有，メモ，議事録，手順．
-    avoid_when: 強い祝賀だけを示したい場合．
-
-  - name: speech_balloon
-    kind: standard
-    enabled: true
-    description: 会話，議論，フィードバックを示す．
-    use_when: 意見募集，議論開始，レビュー依頼．
-    avoid_when: 一方向の完了報告．
-
-  - name: mag
-    kind: standard
-    enabled: true
-    description: 調査，分析，レビューを示す．
-    use_when: 原因調査，コードレビュー，検証，研究分析．
-    avoid_when: 単純な祝賀．
-
-  - name: warning
-    kind: standard
-    enabled: true
-    description: 注意，リスク，障害，重要な懸念を示す．
-    use_when: 障害，セキュリティ上の懸念，期限リスク，注意事項．
-    avoid_when: 軽微で肯定的な報告．
-
-  - name: information_source
-    kind: standard
-    enabled: true
-    description: 参考情報，補足，周知を示す．
-    use_when: 手順変更，参考資料，補足説明，周知．
-    avoid_when: 強い感情を示す必要がある内容．
-
-  - name: rocket
-    kind: standard
-    enabled: true
-    description: 前進，公開，開始，成長を示す．
-    use_when: デプロイ，リリース，プロジェクト開始，性能向上．
-    avoid_when: 障害，延期，失敗．
-
-  - name: heart
-    kind: standard
-    enabled: true
-    description: 感謝，共感，支援を示す．
-    use_when: 感謝，支援，励まし，共感が適切な内容．
-    avoid_when: 形式的な技術通知だけの内容．
-
-  - name: muscle
-    kind: standard
-    enabled: true
-    description: 努力，粘り強さ，挑戦を示す．
-    use_when: 難しい作業への取り組み，継続的な改善．
-    avoid_when: 深刻な失敗を軽視する可能性がある場合．
-
-  - name: pray
-    kind: standard
-    enabled: true
-    description: 感謝，願い，配慮を示す．
-    use_when: 丁寧な依頼，感謝，支援を願う内容．
-    avoid_when: 宗教的含意が不適切になり得る内容では慎重に使う．
-
-  # ワークスペースに同名のカスタム絵文字を登録してから有効化する．
-  # - name: nice_research
-  #   kind: custom
-  #   enabled: true
-  #   description: 良い研究成果や有益な研究共有を称える．
-  #   use_when: 論文採択，研究成果，興味深い実験結果．
-  #   avoid_when: 未検証の主張，否定的な結果を軽視する場合．
+```text
+lgtm-nya
+mita-nya
+naruhodo-nya
+good-nya
+yoshi-nya
+ok-nya
+yatta-nya
+clap-nya
+medetai-nya
+dai-kansha-nya
+thanks-nya
+onashasu-nya
+ouen-nya
+eiei-o-nya
+donmai-nya
+odaijini-nya
+hokkori-nya
+big-love-nya
+kitai-nya
+hirameita-nya
+think-nya
+singi-chu-nya
+memo-nya
+osirase-nya
+chira-nya
+jii-nya2
+komata-nya
+work-yabai-nya
+bakushou-nya
+nanimo-sitenainoni-kowareta-nya
 ```
 
 ---
