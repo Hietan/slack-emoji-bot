@@ -102,6 +102,10 @@ resource "google_cloud_run_v2_service" "receiver" {
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
+  scaling {
+    min_instance_count = 0
+  }
+
   template {
     service_account                  = google_service_account.receiver.email
     max_instance_request_concurrency = 80
@@ -113,6 +117,7 @@ resource "google_cloud_run_v2_service" "receiver" {
       image   = var.image
       command = ["node", "dist/src/receiver/main.js"]
       resources {
+        cpu_idle = true
         limits = {
           cpu    = "1"
           memory = "256Mi"
@@ -183,6 +188,10 @@ resource "google_cloud_run_v2_service" "worker" {
   location = var.region
   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
+  scaling {
+    min_instance_count = 0
+  }
+
   template {
     service_account                  = google_service_account.worker.email
     max_instance_request_concurrency = 4
@@ -194,6 +203,7 @@ resource "google_cloud_run_v2_service" "worker" {
       image   = var.image
       command = ["node", "dist/src/worker/main.js"]
       resources {
+        cpu_idle = true
         limits = {
           cpu    = "1"
           memory = "512Mi"

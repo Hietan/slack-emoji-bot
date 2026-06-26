@@ -225,6 +225,7 @@ describe("contracts", () => {
     expect(terraform).toContain("image   = var.image");
     expect(terraform).toContain("command = [\"node\", \"dist/src/receiver/main.js\"]");
     expect(terraform).toContain("command = [\"node\", \"dist/src/worker/main.js\"]");
+    expect(terraform).toContain("cpu_idle = true");
     expect(dockerfile).not.toContain("SLACK_BOT_TOKEN");
     expect(dockerfile).not.toContain("GEMINI_API_KEY");
     expect(dockerfile).not.toContain("SLACK_SIGNING_SECRET");

@@ -1253,6 +1253,7 @@ GitHub ActionsでCloud Buildを使わないため，`cloudbuild.googleapis.com` 
 | Min instances | 0 |
 | Max instances | 2 |
 | CPU | 1 |
+| CPU idle | true |
 | Memory | 256 MiB |
 | Concurrency | 80 |
 | Request timeout | 10秒 |
@@ -1267,6 +1268,7 @@ GitHub ActionsでCloud Buildを使わないため，`cloudbuild.googleapis.com` 
 | Min instances | 0 |
 | Max instances | 2 |
 | CPU | 1 |
+| CPU idle | true |
 | Memory | 512 MiB |
 | Concurrency | 4 |
 | Request timeout | 120秒 |
