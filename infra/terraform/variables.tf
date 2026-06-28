@@ -41,6 +41,12 @@ variable "gemini_unpaid_terms_acknowledged" {
   default     = false
 }
 
+variable "emoji_config_path" {
+  type        = string
+  description = "Emoji catalog path inside the worker container."
+  default     = "/app/config/emoji.default.yaml"
+}
+
 variable "image" {
   type        = string
   description = "Container image URI."

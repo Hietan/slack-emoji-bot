@@ -38,7 +38,7 @@ The bot ignores messages outside the configured channel and user sets before Clo
 | `GEMINI_TIMEOUT_MS` | `8000` | Gemini request timeout. |
 | `SLACK_TIMEOUT_MS` | `5000` | Slack Web API timeout. |
 | `GEMINI_UNPAID_TERMS_ACKNOWLEDGED` | `false` | Must be `true` in production. |
-| `EMOJI_CONFIG_PATH` | `/app/config/emoji.default.yaml` | YAML emoji catalog path. |
+| `EMOJI_CONFIG_PATH` | `/app/config/emoji.default.yaml` | YAML emoji catalog path. For GitHub Actions deployments, set the Deploy workflow `emoji_config_path` input. |
 | `CUSTOM_EMOJI_CACHE_TTL_SECONDS` | `600` | In-memory cache TTL for `emoji.list`. |
 | `FIRESTORE_DATABASE_ID` | `(default)` | Firestore database ID. |
 | `PROCESS_RECORD_TTL_DAYS` | `7` | Processing record retention window. |

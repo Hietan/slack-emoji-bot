@@ -256,6 +256,10 @@ resource "google_cloud_run_v2_service" "worker" {
         value = tostring(var.gemini_unpaid_terms_acknowledged)
       }
       env {
+        name  = "EMOJI_CONFIG_PATH"
+        value = var.emoji_config_path
+      }
+      env {
         name  = "FIRESTORE_DATABASE_ID"
         value = google_firestore_database.database.name
       }

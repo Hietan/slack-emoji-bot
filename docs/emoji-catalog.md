@@ -68,3 +68,5 @@ The default catalog is intentionally portable so a new workspace can use the bot
 ## Local Catalogs
 
 Local-only catalogs can be kept out of Git with `config/emoji.local.yaml`. Point a local runtime at that file by setting `EMOJI_CONFIG_PATH=config/emoji.local.yaml`, for example in an ignored `.env.local`.
+
+For GitHub Actions deployments, store the local catalog in the `EMOJI_LOCAL_CONFIG_YAML` repository secret and run the Deploy workflow with `emoji_config_path=/app/config/emoji.local.yaml`. The workflow restores the file only inside the build workspace before creating the container image.

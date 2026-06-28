@@ -30,6 +30,10 @@ on:
         description: Acknowledge Gemini unpaid service terms
         required: true
         default: "false"
+      emoji_config_path:
+        description: Emoji catalog path inside the container
+        required: true
+        default: /app/config/emoji.default.yaml
       image_version_tag:
         description: Optional release image tag, for example v0.1.0
         required: false
@@ -63,8 +67,18 @@ jobs:
       - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
       - run: terraform -chdir=infra/terraform init
-      - run: terraform -chdir=infra/terraform apply -auto-approve -target=google_project_service.required -target=google_artifact_registry_repository.repo -target=google_secret_manager_secret.secrets -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform apply -auto-approve -target=google_project_service.required -target=google_artifact_registry_repository.repo -target=google_secret_manager_secret.secrets -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "emoji_config_path=${{ inputs.emoji_config_path }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: gcloud auth configure-docker "${{ inputs.region }}-docker.pkg.dev" --quiet
+      - run: |
+          if [ -n "$EMOJI_LOCAL_CONFIG_YAML" ]; then
+            printf '%s\n' "$EMOJI_LOCAL_CONFIG_YAML" > config/emoji.local.yaml
+            node --import tsx -e "import { loadEmojiConfig } from './src/config/emoji-config.ts'; loadEmojiConfig('config/emoji.local.yaml');"
+          elif [ "${{ inputs.emoji_config_path }}" = "/app/config/emoji.local.yaml" ]; then
+            echo "EMOJI_LOCAL_CONFIG_YAML secret is required when emoji_config_path points at config/emoji.local.yaml" >&2
+            exit 1
+          fi
+        env:
+          EMOJI_LOCAL_CONFIG_YAML: ${{ secrets.EMOJI_LOCAL_CONFIG_YAML }}
       - run: |
           image="${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot"
           docker_args=(-t "$image:${{ github.sha }}")
@@ -81,8 +95,8 @@ jobs:
           if [ -n "${{ inputs.image_version_tag }}" ]; then
             docker push "${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ inputs.image_version_tag }}"
           fi
-      - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
-      - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform plan -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "emoji_config_path=${{ inputs.emoji_config_path }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
+      - run: terraform -chdir=infra/terraform apply -auto-approve -var "project_id=${{ inputs.project_id }}" -var "region=${{ inputs.region }}" -var "slack_team_id=${{ inputs.slack_team_id }}" -var "slack_app_id=${{ inputs.slack_app_id }}" -var "target_channel_ids=${{ inputs.target_channel_ids }}" -var "target_user_ids=${{ inputs.target_user_ids }}" -var "dry_run=${{ inputs.dry_run }}" -var "gemini_unpaid_terms_acknowledged=${{ inputs.gemini_unpaid_terms_acknowledged }}" -var "emoji_config_path=${{ inputs.emoji_config_path }}" -var "image=${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/slack-emoji-bot/slack-emoji-bot:${{ github.sha }}"
       - run: |
           receiver_url="$(terraform -chdir=infra/terraform output -raw receiver_url)"
           curl --fail --silent --show-error "$receiver_url/livez"
