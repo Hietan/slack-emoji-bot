@@ -87,13 +87,14 @@ Important settings:
 
 The default catalog lives at [config/emoji.default.yaml](config/emoji.default.yaml).
 
-`v0.1.0` ships with:
+The default catalog ships with:
 
 - 40 enabled standard emoji candidates.
-- 30 enabled custom emoji candidates from the `neco202511-2` set.
 - 3 standard fallback reactions: `eyes`, `thinking_face`, `memo`.
 
 Custom emoji names are passed to Slack exactly as configured. If a custom emoji does not exist in the workspace, it is ignored for that event and standard emoji remain available. See [Emoji Catalog](docs/emoji-catalog.md).
+
+For local-only catalogs, set `EMOJI_CONFIG_PATH` to an ignored file such as `config/emoji.local.yaml`.
 
 ## Development
 

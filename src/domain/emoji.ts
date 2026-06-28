@@ -63,7 +63,7 @@ export function selectFallback(config: EmojiConfig, allowlist: ReadonlySet<strin
     }
   }
   for (const candidate of config.candidates) {
-    if (candidate.kind === "standard" && allowlist.has(candidate.name)) {
+    if (allowlist.has(candidate.name)) {
       fallbackNames.add(candidate.name);
     }
     if (fallbackNames.size === REACTION_COUNT) {

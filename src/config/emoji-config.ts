@@ -42,9 +42,6 @@ export function parseEmojiConfig(input: unknown): EmojiConfig {
     if (candidate === undefined) {
       throw new Error(`fallback emoji is not a candidate: ${fallbackName}`);
     }
-    if (candidate.kind !== "standard") {
-      throw new Error(`fallback emoji must be standard: ${fallbackName}`);
-    }
   }
   return {
     candidates: enabledCandidates.map((candidate) => ({

@@ -4,6 +4,7 @@ coverage/
 .env
 .env.*
 !.env.example
+config/emoji.local.yaml
 *.log
 terraform.tfstate
 terraform.tfstate.*

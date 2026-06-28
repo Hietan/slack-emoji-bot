@@ -131,7 +131,7 @@ export async function processSlackEvent(input: {
       emojiName
     });
     if (!result.ok && result.code === "invalid_name" && !replacedInvalidNames.has(emojiName)) {
-      const replacement = findStandardFallbackReplacement(input.emojiConfig, currentSelection, record.completedEmojis);
+      const replacement = findFallbackReplacement(input.emojiConfig, currentSelection, record.completedEmojis);
       if (replacement !== null) {
         replacedInvalidNames.add(emojiName);
         currentSelection = replaceAt(currentSelection, index, replacement);
@@ -199,7 +199,7 @@ function replaceAt(names: [string, string, string], index: number, replacement: 
   return updated;
 }
 
-function findStandardFallbackReplacement(
+function findFallbackReplacement(
   emojiConfig: EmojiConfig,
   selectedNames: readonly string[],
   completedNames: readonly string[]
@@ -207,12 +207,12 @@ function findStandardFallbackReplacement(
   const unavailable = new Set([...selectedNames, ...completedNames]);
   for (const name of emojiConfig.fallback) {
     const candidate = emojiConfig.candidates.find((item) => item.name === name);
-    if (candidate?.kind === "standard" && !unavailable.has(name)) {
+    if (candidate !== undefined && !unavailable.has(name)) {
       return name;
     }
   }
   for (const candidate of emojiConfig.candidates) {
-    if (candidate.kind === "standard" && !unavailable.has(candidate.name)) {
+    if (!unavailable.has(candidate.name)) {
       return candidate.name;
     }
   }

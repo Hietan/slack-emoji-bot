@@ -39,19 +39,19 @@ describe("parseEmojiConfig", () => {
     expect(parsed.candidates.every((candidate) => candidate.avoidWhen === "")).toBe(true);
   });
 
-  it("rejects duplicate candidate names and custom fallback", () => {
+  it("rejects duplicate candidate names and accepts custom fallback", () => {
     expect(() =>
       parseEmojiConfig({
         ...valid,
         emojis: [...valid.emojis, { name: "eyes", kind: "standard", enabled: true, description: "a", use_when: "when", avoid_when: "avoid" }]
       })
     ).toThrow(/duplicate/u);
-    expect(() =>
+    expect(
       parseEmojiConfig({
         ...valid,
         emojis: valid.emojis.map((candidate) => (candidate.name === "tada" ? { ...candidate, kind: "custom" } : candidate))
-      })
-    ).toThrow(/standard/u);
+      }).fallback
+    ).toEqual(["eyes", "white_check_mark", "tada"]);
   });
 
   it("rejects duplicate names even when one candidate is disabled", () => {

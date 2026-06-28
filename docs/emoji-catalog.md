@@ -14,12 +14,12 @@ fallback:
   - memo
 
 emojis:
-  - name: clap
+  - name: eyes
     kind: standard
     enabled: true
-    description: Recognition for effort or achievement.
-    use_when: Achievements, good presentations, or useful contributions.
-    avoid_when: Serious problems or unresolved failures.
+    description: Neutral acknowledgement or attention.
+    use_when: Announcements, sharing, review requests, or situational awareness.
+    avoid_when: Personal content where attention may feel intrusive.
 ```
 
 ## Rules
@@ -27,7 +27,7 @@ emojis:
 - `name` is the Slack reaction name without colons.
 - `kind` is `standard` or `custom`.
 - `enabled: false` keeps an entry documented but out of model candidates.
-- fallback entries must be enabled standard emoji.
+- fallback entries must be enabled emoji candidates.
 - names must be unique.
 - descriptions should explain the social reaction, not just the icon shape.
 - `use_when` and `avoid_when` should help Gemini choose between similar reactions.
@@ -46,7 +46,7 @@ When adding standard emoji:
 
 ## Custom Emoji
 
-Custom emoji are included only when Slack `emoji.list` reports that the workspace has the same name. Missing custom emoji are ignored for that event; standard emoji remain available.
+Custom emoji are included only when Slack `emoji.list` reports that the workspace has the same name. Missing custom emoji are ignored for that event; standard emoji remain available when they are part of the configured catalog.
 
 When adding custom emoji:
 
@@ -56,12 +56,15 @@ When adding custom emoji:
 4. Write descriptions by reaction intent, not by file artwork alone.
 5. Test with `DRY_RUN=true` before enabling real reactions.
 
-## `v0.1.0` Defaults
+## Default Catalog
 
-`v0.1.0` ships with:
+The default catalog ships with:
 
 - 40 enabled standard emoji candidates.
-- 30 enabled custom emoji candidates from the `neco202511-2` set.
 - `eyes`, `thinking_face`, and `memo` as deterministic fallback reactions.
 
-Custom emoji from the default catalog do not require code changes, but they do require the same names to exist in the target Slack workspace.
+The default catalog is intentionally portable so a new workspace can use the bot without uploading custom emoji.
+
+## Local Catalogs
+
+Local-only catalogs can be kept out of Git with `config/emoji.local.yaml`. Point a local runtime at that file by setting `EMOJI_CONFIG_PATH=config/emoji.local.yaml`, for example in an ignored `.env.local`.
